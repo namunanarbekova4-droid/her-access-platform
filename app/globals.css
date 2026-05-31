@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,700&display=swap');
+
+:root {
+  --background: #FDFAFF;
+  --foreground: #1A0A22;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  color: #1A0A22;
+  background: #FDFAFF;
+  font-family: 'Inter', 'Noto Sans Arabic', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* RTL support */
+[dir="rtl"] {
+  font-family: 'Noto Sans Arabic', 'Inter', sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF0FF;
+}
+::-webkit-scrollbar-thumb {
+  background: #E9D8F5;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C4A8E0;
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid #3B1347;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Selection */
+::selection {
+  background: #F4D1FF;
+  color: #3B1347;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(90deg, #f0e6fa 25%, #e8d4f5 50%, #f0e6fa 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+}
+
+@layer components {
+  .brand-gradient {
+    background: linear-gradient(135deg, #3B1347 0%, #5C2270 50%, #7C3AED 100%);
+  }
+
+  .card-base {
+    @apply bg-white rounded-3xl border border-border shadow-card;
+  }
+
+  .input-base {
+    @apply w-full px-4 py-3 rounded-2xl border border-border bg-white text-foreground placeholder:text-muted text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-purple/30 focus:border-brand-purple;
+  }
+}
