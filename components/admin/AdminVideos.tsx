@@ -95,7 +95,9 @@ export function AdminVideos() {
     setUploadProgress("Uploading...");
     setError("");
     try {
-      const blob = await upload(file.name, file, {
+      const ext = file.name.split(".").pop() ?? "mp4";
+      const safeName = `video-${Date.now()}.${ext}`;
+      const blob = await upload(safeName, file, {
         access: "public",
         handleUploadUrl: "/api/admin/upload",
       });
