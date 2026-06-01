@@ -9,6 +9,7 @@ declare module "next-auth" {
       image?: string | null;
       language: string;
       onboardingDone: boolean;
+      isAdmin: boolean;
     };
   }
 
@@ -16,6 +17,7 @@ declare module "next-auth" {
     id: string;
     language: string;
     onboardingDone: boolean;
+    isAdmin: boolean;
   }
 }
 
@@ -24,5 +26,6 @@ declare module "next-auth/jwt" {
     id: string;
     language: string;
     onboardingDone: boolean;
+    isAdmin: boolean;
   }
 }

@@ -40,6 +40,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           language: user.language,
           onboardingDone: user.onboardingDone,
+          isAdmin: user.isAdmin,
         };
       },
     }),
@@ -56,6 +57,7 @@ export const authOptions: NextAuthOptions = {
         token.language = (user as { language?: string }).language ?? "en";
         token.onboardingDone =
           (user as { onboardingDone?: boolean }).onboardingDone ?? false;
+        token.isAdmin = (user as { isAdmin?: boolean }).isAdmin ?? false;
       }
       return token;
     },
@@ -64,6 +66,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.language = token.language as string;
         session.user.onboardingDone = token.onboardingDone as boolean;
+        session.user.isAdmin = token.isAdmin as boolean;
       }
       return session;
     },

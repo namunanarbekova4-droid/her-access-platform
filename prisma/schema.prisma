@@ -35,22 +35,23 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  nickname      String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  language      String    @default("en")
-  onboardingDone Boolean  @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  name           String?
+  nickname       String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  password       String?
+  language       String    @default("en")
+  onboardingDone Boolean   @default(false)
+  isAdmin        Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  accounts     Account[]
-  sessions     Session[]
-  profile      UserProfile?
-  messages     Message[]
+  accounts      Account[]
+  sessions      Session[]
+  profile       UserProfile?
+  messages      Message[]
   circleMembers CircleMember[]
 }
 
@@ -63,16 +64,16 @@ model VerificationToken {
 }
 
 model UserProfile {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  educationLevel  String?
-  learningGoals   String?
-  timeAvailable   String?
-  careerDream     String?
-  interests       String?
-  learningPath    String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  educationLevel String?
+  learningGoals  String?
+  timeAvailable  String?
+  careerDream    String?
+  interests      String?
+  learningPath   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -100,11 +101,11 @@ model Circle {
 }
 
 model CircleMember {
-  id        String   @id @default(cuid())
-  circleId  String
-  userId    String
-  nickname  String
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  circleId String
+  userId   String
+  nickname String
+  joinedAt DateTime @default(now())
 
   circle Circle @relation(fields: [circleId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -132,4 +133,20 @@ model LibraryItem {
   duration    String?
   difficulty  String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model VideoLesson {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  category     String
+  videoUrl     String
+  thumbnailUrl String?
+  duration     String?
+  language     String   @default("en")
+  isPublished  Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
