@@ -1,31 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
-import { put } from "@vercel/blob";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 
 export async function POST(request: NextRequest) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const formData = await request.formData();
-  const file = formData.get("file") as File | null;
+  const body = await request.json() as HandleUploadBody;
 
-  if (!file) {
-    return NextResponse.json({ error: "No file provided" }, { status: 400 });
+  try {
+    const jsonResponse = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async () => {
+        return {
+          allowedContentTypes: [
+            "video/mp4",
+            "video/webm",
+            "video/ogg",
+            "video/quicktime",
+            "video/x-msvideo",
+          ],
+          maximumSizeInBytes: 500 * 1024 * 1024,
+        };
+      },
+      onUploadCompleted: async () => {},
+    });
+    return NextResponse.json(jsonResponse);
+  } catch (error) {
+    return NextResponse.json({ error: String(error) }, { status: 400 });
   }
-
-  const maxSize = 500 * 1024 * 1024; // 500MB
-  if (file.size > maxSize) {
-    return NextResponse.json({ error: "File too large (max 500MB)" }, { status: 400 });
-  }
-
-  const allowed = ["video/mp4", "video/webm", "video/ogg", "video/quicktime", "video/x-msvideo"];
-  if (!allowed.includes(file.type) && !file.name.match(/\.(mp4|webm|ogg|mov|avi)$/i)) {
-    return NextResponse.json({ error: "Only video files are allowed" }, { status: 400 });
-  }
-
-  const blob = await put(`videos/${Date.now()}-${file.name}`, file, {
-    access: "public",
-  });
-
-  return NextResponse.json({ url: blob.url });
 }

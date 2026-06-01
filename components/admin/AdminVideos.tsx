@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { upload } from "@vercel/blob/client";
 import { Plus, Pencil, Trash2, X, Check, Video, ExternalLink, Upload, Link } from "lucide-react";
 
 interface VideoLesson {
@@ -94,12 +95,11 @@ export function AdminVideos() {
     setUploadProgress("Uploading...");
     setError("");
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const data = await res.json() as { url?: string; error?: string };
-      if (!res.ok) throw new Error(data.error ?? "Upload failed");
-      setForm((f) => ({ ...f, videoUrl: data.url! }));
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/admin/upload",
+      });
+      setForm((f) => ({ ...f, videoUrl: blob.url }));
       setUploadProgress("Uploaded: " + file.name);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
