@@ -3,6 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Pencil, Trash2, X, Check, Video, ExternalLink, Upload, Link } from "lucide-react";
 
+interface Course {
+  id: string;
+  title: string;
+  totalWeeks: number;
+}
+
 interface VideoLesson {
   id: string;
   title: string;
@@ -14,6 +20,8 @@ interface VideoLesson {
   language: string;
   isPublished: boolean;
   sortOrder: number;
+  courseId: string | null;
+  weekNumber: number | null;
   createdAt: string;
 }
 
@@ -39,10 +47,13 @@ const EMPTY_FORM = {
   language: "en",
   isPublished: true,
   sortOrder: 0,
+  courseId: "",
+  weekNumber: "",
 };
 
 export function AdminVideos() {
   const [videos, setVideos] = useState<VideoLesson[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -53,9 +64,14 @@ export function AdminVideos() {
   const [urlMode, setUrlMode] = useState<"link" | "drive">("link");
 
   const fetchVideos = useCallback(async () => {
-    const res = await fetch("/api/admin/videos");
-    const data = await res.json() as { videos: VideoLesson[] };
-    setVideos(data.videos ?? []);
+    const [vRes, cRes] = await Promise.all([
+      fetch("/api/admin/videos"),
+      fetch("/api/admin/courses"),
+    ]);
+    const vData = await vRes.json() as { videos: VideoLesson[] };
+    const cData = await cRes.json() as { courses: Course[] };
+    setVideos(vData.videos ?? []);
+    setCourses(cData.courses ?? []);
     setLoading(false);
   }, []);
 
@@ -81,6 +97,8 @@ export function AdminVideos() {
       language: v.language,
       isPublished: v.isPublished,
       sortOrder: v.sortOrder,
+      courseId: v.courseId ?? "",
+      weekNumber: v.weekNumber?.toString() ?? "",
     });
     setError("");
     setUrlMode("link");
@@ -104,10 +122,15 @@ export function AdminVideos() {
     try {
       const url = editId ? `/api/admin/videos/${editId}` : "/api/admin/videos";
       const method = editId ? "PATCH" : "POST";
+      const payload = {
+        ...form,
+        courseId: form.courseId || null,
+        weekNumber: form.weekNumber ? parseInt(form.weekNumber) : null,
+      };
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const d = await res.json() as { error?: string };
@@ -299,6 +322,33 @@ export function AdminVideos() {
                     value={form.sortOrder}
                     onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Link to Course</label>
+                  <select
+                    value={form.courseId}
+                    onChange={(e) => setForm({ ...form, courseId: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
+                  >
+                    <option value="">None (standalone)</option>
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Week Number</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.weekNumber}
+                    onChange={(e) => setForm({ ...form, weekNumber: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
+                    placeholder="e.g. 1"
                   />
                 </div>
               </div>

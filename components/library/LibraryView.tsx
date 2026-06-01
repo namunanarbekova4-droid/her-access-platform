@@ -1,161 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import toast from "react-hot-toast";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Search, Download, BookOpen } from "lucide-react";
-import type { LibraryResource } from "@/types";
+import { Search, BookOpen, PlayCircle, Clock, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-// ── Hardcoded resource catalogue ──────────────────────────────────────────────
-const ALL_RESOURCES: LibraryResource[] = [
-  {
-    id: "en-1",
-    title: "Grammar Fundamentals",
-    description:
-      "Master the building blocks of English: nouns, verbs, tenses, and sentence structure with clear, practical examples.",
-    category: "English",
-    content: "",
-    language: "English",
-    duration: "4 weeks",
-    difficulty: "Beginner",
-  },
-  {
-    id: "en-2",
-    title: "Business English",
-    description:
-      "Professional communication skills for emails, meetings, negotiations, and presentations in a global workplace.",
-    category: "English",
-    content: "",
-    language: "English",
-    duration: "6 weeks",
-    difficulty: "Intermediate",
-  },
-  {
-    id: "en-3",
-    title: "IELTS Preparation",
-    description:
-      "Structured preparation for all four IELTS modules — listening, reading, writing, and speaking — with practice tests.",
-    category: "English",
-    content: "",
-    language: "English",
-    duration: "8 weeks",
-    difficulty: "Advanced",
-  },
-  {
-    id: "sci-1",
-    title: "Biology Basics",
-    description:
-      "Explore the science of life: cells, genetics, ecosystems, and the human body explained simply and visually.",
-    category: "Science",
-    content: "",
-    language: "English",
-    duration: "5 weeks",
-    difficulty: "Beginner",
-  },
-  {
-    id: "sci-2",
-    title: "Chemistry 101",
-    description:
-      "Atoms, molecules, reactions, and the periodic table — foundational chemistry that connects to everyday life.",
-    category: "Science",
-    content: "",
-    language: "English",
-    duration: "5 weeks",
-    difficulty: "Beginner",
-  },
-  {
-    id: "sci-3",
-    title: "Physics for Beginners",
-    description:
-      "Understand forces, motion, energy, and light. Real-world examples make abstract concepts click.",
-    category: "Science",
-    content: "",
-    language: "English",
-    duration: "6 weeks",
-    difficulty: "Beginner",
-  },
-  {
-    id: "math-1",
-    title: "Algebra Foundation",
-    description:
-      "From variables to equations — build the mathematical thinking skills that underpin science, coding, and finance.",
-    category: "Math",
-    content: "",
-    language: "English",
-    duration: "4 weeks",
-    difficulty: "Beginner",
-  },
-  {
-    id: "math-2",
-    title: "Statistics Intro",
-    description:
-      "Learn to collect, analyse, and interpret data. Essential skills for research, business, and informed decision-making.",
-    category: "Math",
-    content: "",
-    language: "English",
-    duration: "4 weeks",
-    difficulty: "Intermediate",
-  },
-  {
-    id: "code-1",
-    title: "Python Basics",
-    description:
-      "Write your first programs in one of the world's most powerful languages. Variables, loops, functions — no experience needed.",
-    category: "Coding",
-    content: "",
-    language: "English",
-    duration: "6 weeks",
-    difficulty: "Beginner",
-  },
-  {
-    id: "code-2",
-    title: "Web Development Intro",
-    description:
-      "Build real websites with HTML, CSS, and JavaScript. Go from zero to publishing your own page online.",
-    category: "Coding",
-    content: "",
-    language: "English",
-    duration: "8 weeks",
-    difficulty: "Beginner",
-  },
-  {
-    id: "lead-1",
-    title: "Public Speaking",
-    description:
-      "Overcome fear and communicate with confidence. Practical techniques for speeches, interviews, and everyday conversations.",
-    category: "Leadership",
-    content: "",
-    language: "English",
-    duration: "3 weeks",
-    difficulty: "Beginner",
-  },
-  {
-    id: "lead-2",
-    title: "Goal Setting",
-    description:
-      "Turn big dreams into achievable plans. Learn SMART goals, habit formation, and the mindset of consistent progress.",
-    category: "Leadership",
-    content: "",
-    language: "English",
-    duration: "2 weeks",
-    difficulty: "Beginner",
-  },
-];
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  totalWeeks: number;
+  difficulty: string;
+  imageEmoji: string;
+  _count: { materials: number; lessons: number };
+}
 
 type Category = "All" | "English" | "Science" | "Math" | "Coding" | "Leadership";
 
-const CATEGORIES: Category[] = [
-  "All",
-  "English",
-  "Science",
-  "Math",
-  "Coding",
-  "Leadership",
-];
+const CATEGORIES: Category[] = ["All", "English", "Science", "Math", "Coding", "Leadership"];
 
 const CATEGORY_EMOJIS: Record<string, string> = {
   English: "📖",
@@ -165,98 +33,135 @@ const CATEGORY_EMOJIS: Record<string, string> = {
   Leadership: "🌟",
 };
 
-const DIFFICULTY_VARIANT: Record<
-  string,
-  "success" | "warning" | "error" | "default"
-> = {
+const CATEGORY_GRADIENT: Record<string, string> = {
+  English: "from-blue-50 to-indigo-50",
+  Science: "from-green-50 to-emerald-50",
+  Math: "from-orange-50 to-amber-50",
+  Coding: "from-violet-50 to-purple-50",
+  Leadership: "from-pink-50 to-rose-50",
+};
+
+const CATEGORY_ACCENT: Record<string, string> = {
+  English: "text-blue-600",
+  Science: "text-green-600",
+  Math: "text-orange-600",
+  Coding: "text-violet-600",
+  Leadership: "text-pink-600",
+};
+
+const DIFFICULTY_VARIANT: Record<string, "success" | "warning" | "error" | "default"> = {
   Beginner: "success",
   Intermediate: "warning",
   Advanced: "error",
 };
 
-// ── Resource card ─────────────────────────────────────────────────────────────
-function ResourceCard({ resource }: { resource: LibraryResource }) {
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    setSaved(true);
-    toast.success("Saved for offline access!", {
-      icon: "📥",
-      style: {
-        borderRadius: "16px",
-        background: "#3B1347",
-        color: "#fff",
-      },
-    });
-  };
-
-  const emoji = CATEGORY_EMOJIS[resource.category] ?? "📚";
+function CourseCard({ course }: { course: Course }) {
+  const gradient = CATEGORY_GRADIENT[course.category] ?? "from-gray-50 to-gray-100";
+  const accent = CATEGORY_ACCENT[course.category] ?? "text-gray-600";
 
   return (
-    <Card hover className="flex flex-col h-full">
-      <div className="flex items-start gap-3 mb-3">
-        <div className="w-11 h-11 rounded-2xl bg-brand-lavender-light flex items-center justify-center text-xl flex-shrink-0">
-          {emoji}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-foreground text-sm leading-snug line-clamp-2">
-            {resource.title}
+    <Link href={`/library/${course.id}`}>
+      <motion.div
+        whileHover={{ y: -2 }}
+        transition={{ duration: 0.2 }}
+        className="bg-white rounded-3xl border border-border shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col h-full overflow-hidden group"
+      >
+        {/* Top colour band */}
+        <div className={cn("px-5 pt-5 pb-4 bg-gradient-to-br", gradient)}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-white/80 flex items-center justify-center text-2xl shadow-sm flex-shrink-0">
+              {course.imageEmoji}
+            </div>
+            <Badge variant={DIFFICULTY_VARIANT[course.difficulty] ?? "default"}>
+              {course.difficulty}
+            </Badge>
+          </div>
+          <h3 className="text-base font-semibold text-foreground mt-3 leading-snug group-hover:text-brand-purple transition-colors">
+            {course.title}
           </h3>
-          <div className="flex flex-wrap gap-1.5 mt-1.5">
-            <Badge variant="lavender">{resource.category}</Badge>
-            {resource.difficulty && (
-              <Badge
-                variant={
-                  DIFFICULTY_VARIANT[resource.difficulty] ?? "default"
-                }
-              >
-                {resource.difficulty}
-              </Badge>
-            )}
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-4 flex-1 flex flex-col">
+          <p className="text-xs text-muted leading-relaxed flex-1 mb-4 line-clamp-3">
+            {course.description}
+          </p>
+
+          {/* Stats */}
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+            <div className="flex items-center gap-3">
+              <div className={cn("flex items-center gap-1 text-xs font-medium", accent)}>
+                <Clock size={11} />
+                {course.totalWeeks}w
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted">
+                <PlayCircle size={11} />
+                {course._count.lessons} videos
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted">
+                <BookOpen size={11} />
+                {course._count.materials} reads
+              </div>
+            </div>
+            <ChevronRight
+              size={16}
+              className="text-muted group-hover:text-brand-purple group-hover:translate-x-0.5 transition-all"
+            />
           </div>
         </div>
-      </div>
-
-      <p className="text-xs text-muted leading-relaxed flex-1 mb-4">
-        {resource.description}
-      </p>
-
-      <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
-        {resource.duration && (
-          <div className="flex items-center gap-1.5 text-xs text-muted">
-            <BookOpen size={12} className="text-brand-purple" />
-            <span>{resource.duration}</span>
-          </div>
-        )}
-        <Button
-          variant={saved ? "secondary" : "ghost"}
-          size="sm"
-          onClick={handleSave}
-          disabled={saved}
-          className="text-xs ml-auto"
-        >
-          <Download size={12} />
-          {saved ? "Saved" : "Save Offline"}
-        </Button>
-      </div>
-    </Card>
+      </motion.div>
+    </Link>
   );
 }
 
-// ── Main view ─────────────────────────────────────────────────────────────────
+function CourseCardSkeleton() {
+  return (
+    <div className="bg-white rounded-3xl border border-border shadow-card overflow-hidden">
+      <div className="px-5 pt-5 pb-4 bg-gray-50">
+        <div className="flex items-start justify-between gap-3">
+          <Skeleton className="w-12 h-12 rounded-2xl" />
+          <Skeleton className="w-16 h-5 rounded-full" />
+        </div>
+        <Skeleton className="mt-3 h-4 w-3/4 rounded" />
+      </div>
+      <div className="px-5 py-4">
+        <Skeleton className="h-3 w-full rounded mb-1.5" />
+        <Skeleton className="h-3 w-5/6 rounded mb-1.5" />
+        <Skeleton className="h-3 w-4/6 rounded mb-4" />
+        <div className="flex gap-3 pt-3 border-t border-border">
+          <Skeleton className="h-3 w-8 rounded" />
+          <Skeleton className="h-3 w-12 rounded" />
+          <Skeleton className="h-3 w-10 rounded" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function LibraryView() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<Category>("All");
 
-  const filtered = ALL_RESOURCES.filter((r) => {
-    const matchesCategory =
-      activeCategory === "All" || r.category === activeCategory;
+  useEffect(() => {
+    fetch("/api/courses")
+      .then((r) => r.json())
+      .then((d: { courses?: Course[] }) => {
+        setCourses(d.courses ?? []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const filtered = courses.filter((c) => {
+    const matchesCategory = activeCategory === "All" || c.category === activeCategory;
     const q = query.toLowerCase();
     const matchesQuery =
       q === "" ||
-      r.title.toLowerCase().includes(q) ||
-      r.description.toLowerCase().includes(q) ||
-      r.category.toLowerCase().includes(q);
+      c.title.toLowerCase().includes(q) ||
+      c.description.toLowerCase().includes(q) ||
+      c.category.toLowerCase().includes(q);
     return matchesCategory && matchesQuery;
   });
 
@@ -273,7 +178,7 @@ export function LibraryView() {
           Quiet Library
         </h1>
         <p className="text-muted text-sm">
-          Curated lessons you can save and study anywhere — even offline.
+          Structured courses with video lessons and reading materials — study anywhere, even offline.
         </p>
       </motion.div>
 
@@ -293,7 +198,7 @@ export function LibraryView() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search lessons…"
+            placeholder="Search courses…"
             className="w-full pl-10 pr-4 py-3 rounded-2xl border border-border bg-white text-foreground placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30 focus:border-brand-purple transition-all"
           />
         </div>
@@ -310,11 +215,12 @@ export function LibraryView() {
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border ${
+            className={cn(
+              "px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border",
               activeCategory === cat
                 ? "bg-brand-purple text-white border-brand-purple shadow-soft"
                 : "bg-white text-muted border-border hover:border-brand-purple/50 hover:text-brand-purple"
-            }`}
+            )}
           >
             {cat !== "All" && (
               <span className="mr-1.5">{CATEGORY_EMOJIS[cat]}</span>
@@ -324,9 +230,21 @@ export function LibraryView() {
         ))}
       </motion.div>
 
-      {/* Resource grid */}
+      {/* Course grid */}
       <AnimatePresence mode="wait">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <motion.div
+            key="skeleton"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            {Array.from({ length: 6 }).map((_, i) => (
+              <CourseCardSkeleton key={i} />
+            ))}
+          </motion.div>
+        ) : filtered.length === 0 ? (
           <motion.div
             key="empty"
             initial={{ opacity: 0 }}
@@ -335,21 +253,18 @@ export function LibraryView() {
           >
             <EmptyState
               emoji="🔍"
-              title="No lessons found"
+              title="No courses found"
               description={
                 query
-                  ? `No results for "${query}". Try a different search term or category.`
-                  : "No lessons in this category yet. Check back soon!"
+                  ? `No results for "${query}". Try a different search term.`
+                  : "No courses in this category yet."
               }
               action={
                 query || activeCategory !== "All" ? (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setQuery("");
-                      setActiveCategory("All");
-                    }}
+                    onClick={() => { setQuery(""); setActiveCategory("All"); }}
                   >
                     Clear filters
                   </Button>
@@ -365,14 +280,14 @@ export function LibraryView() {
             exit={{ opacity: 0 }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
           >
-            {filtered.map((resource, i) => (
+            {filtered.map((course, i) => (
               <motion.div
-                key={resource.id}
+                key={course.id}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.04 }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
               >
-                <ResourceCard resource={resource} />
+                <CourseCard course={course} />
               </motion.div>
             ))}
           </motion.div>

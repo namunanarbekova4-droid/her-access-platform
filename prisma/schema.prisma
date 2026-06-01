@@ -127,6 +127,24 @@ model CirclePost {
   circle Circle @relation(fields: [circleId], references: [id], onDelete: Cascade)
 }
 
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    String
+  totalWeeks  Int
+  difficulty  String   @default("Beginner")
+  language    String   @default("en")
+  imageEmoji  String   @default("📚")
+  isPublished Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lessons   VideoLesson[]
+  materials LibraryItem[]
+}
+
 model LibraryItem {
   id          String   @id @default(cuid())
   title       String
@@ -136,8 +154,13 @@ model LibraryItem {
   language    String   @default("en")
   duration    String?
   difficulty  String?
+  courseId    String?
+  weekNumber  Int?
+  type        String?  @default("reading")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
 }
 
 model VideoLesson {
@@ -151,8 +174,12 @@ model VideoLesson {
   language     String   @default("en")
   isPublished  Boolean  @default(true)
   sortOrder    Int      @default(0)
+  courseId     String?
+  weekNumber   Int?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
 }
 
 enum ReviewStatus {

@@ -26,6 +26,8 @@ export async function POST(request: NextRequest) {
     language?: string;
     isPublished?: boolean;
     sortOrder?: number;
+    courseId?: string | null;
+    weekNumber?: number | null;
   };
 
   if (!body.title?.trim() || !body.videoUrl?.trim() || !body.category?.trim()) {
@@ -43,6 +45,8 @@ export async function POST(request: NextRequest) {
       language: body.language ?? "en",
       isPublished: body.isPublished ?? true,
       sortOrder: body.sortOrder ?? 0,
+      courseId: body.courseId ?? null,
+      weekNumber: body.weekNumber ?? null,
     },
   });
 

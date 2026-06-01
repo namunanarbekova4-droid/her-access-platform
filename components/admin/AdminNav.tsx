@@ -10,10 +10,12 @@ import {
   Library,
   Users,
   ArrowLeft,
+  BookOpen,
 } from "lucide-react";
 
 const navItems = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
+  { href: "/admin/courses", label: "Courses", icon: BookOpen },
   { href: "/admin/videos", label: "Video Lessons", icon: Video },
   { href: "/admin/library", label: "Library Items", icon: Library },
   { href: "/admin/reviews", label: "Review Moderation", icon: Users },

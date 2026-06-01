@@ -19,6 +19,8 @@ export async function PATCH(
     language: string;
     isPublished: boolean;
     sortOrder: number;
+    courseId: string | null;
+    weekNumber: number | null;
   }>;
 
   const video = await prisma.videoLesson.update({
@@ -33,6 +35,8 @@ export async function PATCH(
       ...(body.language && { language: body.language }),
       ...(body.isPublished !== undefined && { isPublished: body.isPublished }),
       ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder }),
+      ...("courseId" in body && { courseId: body.courseId ?? null }),
+      ...("weekNumber" in body && { weekNumber: body.weekNumber ?? null }),
     },
   });
 
