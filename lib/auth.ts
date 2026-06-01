@@ -1,3 +1,12 @@
+// Sanitize NEXTAUTH_URL before NextAuth reads it — prevents invalid URL crash during build
+if (process.env.NEXTAUTH_URL) {
+  try {
+    new URL(process.env.NEXTAUTH_URL);
+  } catch {
+    process.env.NEXTAUTH_URL = "http://localhost:3000";
+  }
+}
+
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
