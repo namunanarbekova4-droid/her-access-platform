@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Pencil, Trash2, X, Check, Video, ExternalLink } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Plus, Pencil, Trash2, X, Check, Video, ExternalLink, Upload, Link } from "lucide-react";
 
 interface VideoLesson {
   id: string;
@@ -50,6 +50,9 @@ export function AdminVideos() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [urlMode, setUrlMode] = useState<"link" | "upload">("link");
+  const [uploadProgress, setUploadProgress] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchVideos = useCallback(async () => {
     const res = await fetch("/api/admin/videos");
@@ -64,6 +67,8 @@ export function AdminVideos() {
     setEditId(null);
     setForm(EMPTY_FORM);
     setError("");
+    setUrlMode("link");
+    setUploadProgress("");
     setShowForm(true);
   }
 
@@ -81,14 +86,33 @@ export function AdminVideos() {
       sortOrder: v.sortOrder,
     });
     setError("");
+    setUrlMode("link");
+    setUploadProgress("");
     setShowForm(true);
+  }
+
+  async function handleFileUpload(file: File) {
+    setUploadProgress("Uploading...");
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json() as { url?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      setForm((f) => ({ ...f, videoUrl: data.url! }));
+      setUploadProgress("Uploaded: " + file.name);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+      setUploadProgress("");
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!form.title.trim() || !form.videoUrl.trim() || !form.category) {
-      setError("Title, video URL and category are required.");
+      setError("Title, video and category are required.");
       return;
     }
     setSaving(true);
@@ -165,14 +189,71 @@ export function AdminVideos() {
                 />
               </div>
 
+              {/* Video source toggle */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Video URL * <span className="text-gray-400 font-normal">(YouTube, Vimeo, or direct mp4)</span></label>
-                <input
-                  value={form.videoUrl}
-                  onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
-                  placeholder="https://youtube.com/watch?v=..."
-                />
+                <label className="block text-xs font-medium text-gray-700 mb-2">Video Source *</label>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setUrlMode("link")}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                      urlMode === "link"
+                        ? "bg-brand-purple text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    <Link size={14} /> Paste URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUrlMode("upload")}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                      urlMode === "upload"
+                        ? "bg-brand-purple text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    <Upload size={14} /> Upload File
+                  </button>
+                </div>
+
+                {urlMode === "link" ? (
+                  <input
+                    value={form.videoUrl}
+                    onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
+                    placeholder="https://youtube.com/watch?v=... or https://..."
+                  />
+                ) : (
+                  <div>
+                    <div
+                      onClick={() => fileRef.current?.click()}
+                      className="w-full border-2 border-dashed border-gray-300 rounded-xl px-4 py-6 text-center cursor-pointer hover:border-brand-purple transition-colors"
+                    >
+                      <Upload size={24} className="mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600">Tap to select video from gallery</p>
+                      <p className="text-xs text-gray-400 mt-1">MP4, MOV, WebM — max 500MB</p>
+                    </div>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file);
+                      }}
+                    />
+                    {uploadProgress && (
+                      <p className={`text-xs mt-2 ${uploadProgress.startsWith("Uploaded") ? "text-green-600" : "text-blue-600"}`}>
+                        {uploadProgress}
+                      </p>
+                    )}
+                    {form.videoUrl && urlMode === "upload" && (
+                      <p className="text-xs text-green-600 mt-1 truncate">✓ Ready to save</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -261,7 +342,7 @@ export function AdminVideos() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || uploadProgress === "Uploading..."}
                   className="flex-1 bg-brand-purple text-white py-2 rounded-xl text-sm font-medium hover:bg-purple-800 transition-colors disabled:opacity-50"
                 >
                   {saving ? "Saving..." : editId ? "Save Changes" : "Add Video"}
