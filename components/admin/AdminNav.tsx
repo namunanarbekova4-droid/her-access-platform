@@ -16,6 +16,7 @@ const navItems = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/videos", label: "Video Lessons", icon: Video },
   { href: "/admin/library", label: "Library Items", icon: Library },
+  { href: "/admin/reviews", label: "Review Moderation", icon: Users },
   { href: "/admin/users", label: "Users", icon: Users },
 ];
 

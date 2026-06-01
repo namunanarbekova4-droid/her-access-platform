@@ -14,6 +14,8 @@ import {
   Star,
   LogOut,
   Eye,
+  Megaphone,
+  Heart,
 } from "lucide-react";
 import { useState } from "react";
 import { StealthMode } from "@/components/stealth/StealthMode";
@@ -25,6 +27,8 @@ const navItems = [
   { href: "/library", label: "Quiet Library", icon: Library },
   { href: "/circles", label: "Peer Circles", icon: Users },
   { href: "/stories", label: "Stories", icon: Star },
+  { href: "/news", label: "Announcements", icon: Megaphone },
+  { href: "/reviews", label: "Reviews", icon: Heart },
 ];
 
 export function DashboardNav() {
