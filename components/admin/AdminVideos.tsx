@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Pencil, Trash2, X, Check, Video, ExternalLink, Upload, Link } from "lucide-react";
 
 interface VideoLesson {
@@ -52,7 +52,6 @@ export function AdminVideos() {
   const [error, setError] = useState("");
   const [urlMode, setUrlMode] = useState<"link" | "upload">("link");
   const [uploadProgress, setUploadProgress] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchVideos = useCallback(async () => {
     const res = await fetch("/api/admin/videos");
@@ -226,24 +225,20 @@ export function AdminVideos() {
                   />
                 ) : (
                   <div>
-                    <div
-                      onClick={() => fileRef.current?.click()}
-                      className="w-full border-2 border-dashed border-gray-300 rounded-xl px-4 py-6 text-center cursor-pointer hover:border-brand-purple transition-colors"
-                    >
+                    <label className="w-full border-2 border-dashed border-gray-300 rounded-xl px-4 py-6 text-center cursor-pointer hover:border-brand-purple transition-colors block">
                       <Upload size={24} className="mx-auto text-gray-400 mb-2" />
                       <p className="text-sm text-gray-600">Tap to select video from gallery</p>
                       <p className="text-xs text-gray-400 mt-1">MP4, MOV, WebM — max 500MB</p>
-                    </div>
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="video/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleFileUpload(file);
-                      }}
-                    />
+                      <input
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(file);
+                        }}
+                      />
+                    </label>
                     {uploadProgress && (
                       <p className={`text-xs mt-2 ${uploadProgress.startsWith("Uploaded") ? "text-green-600" : "text-blue-600"}`}>
                         {uploadProgress}
