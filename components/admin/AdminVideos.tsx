@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { upload } from "@vercel/blob/client";
 import { Plus, Pencil, Trash2, X, Check, Video, ExternalLink, Upload, Link } from "lucide-react";
 
 interface VideoLesson {
@@ -51,8 +50,7 @@ export function AdminVideos() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const [urlMode, setUrlMode] = useState<"link" | "upload">("link");
-  const [uploadProgress, setUploadProgress] = useState("");
+  const [urlMode, setUrlMode] = useState<"link" | "drive">("link");
 
   const fetchVideos = useCallback(async () => {
     const res = await fetch("/api/admin/videos");
@@ -68,7 +66,6 @@ export function AdminVideos() {
     setForm(EMPTY_FORM);
     setError("");
     setUrlMode("link");
-    setUploadProgress("");
     setShowForm(true);
   }
 
@@ -87,26 +84,13 @@ export function AdminVideos() {
     });
     setError("");
     setUrlMode("link");
-    setUploadProgress("");
     setShowForm(true);
   }
 
-  async function handleFileUpload(file: File) {
-    setUploadProgress("Uploading...");
-    setError("");
-    try {
-      const ext = file.name.split(".").pop() ?? "mp4";
-      const safeName = `video-${Date.now()}.${ext}`;
-      const blob = await upload(safeName, file, {
-        access: "public",
-        handleUploadUrl: "/api/admin/upload",
-      });
-      setForm((f) => ({ ...f, videoUrl: blob.url }));
-      setUploadProgress("Uploaded: " + file.name);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-      setUploadProgress("");
-    }
+  function convertDriveLink(url: string): string {
+    const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
+    return url;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -203,18 +187,18 @@ export function AdminVideos() {
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
-                    <Link size={14} /> Paste URL
+                    <Link size={14} /> YouTube / URL
                   </button>
                   <button
                     type="button"
-                    onClick={() => setUrlMode("upload")}
+                    onClick={() => setUrlMode("drive")}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                      urlMode === "upload"
+                      urlMode === "drive"
                         ? "bg-brand-purple text-white"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
-                    <Upload size={14} /> Upload File
+                    <Upload size={14} /> Google Drive
                   </button>
                 </div>
 
@@ -223,31 +207,24 @@ export function AdminVideos() {
                     value={form.videoUrl}
                     onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
-                    placeholder="https://youtube.com/watch?v=... or https://..."
+                    placeholder="https://youtube.com/watch?v=..."
                   />
                 ) : (
-                  <div>
-                    <label className="w-full border-2 border-dashed border-gray-300 rounded-xl px-4 py-6 text-center cursor-pointer hover:border-brand-purple transition-colors block">
-                      <Upload size={24} className="mx-auto text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600">Tap to select video from gallery</p>
-                      <p className="text-xs text-gray-400 mt-1">MP4, MOV, WebM — max 500MB</p>
-                      <input
-                        type="file"
-                        accept="video/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file);
-                        }}
-                      />
-                    </label>
-                    {uploadProgress && (
-                      <p className={`text-xs mt-2 ${uploadProgress.startsWith("Uploaded") ? "text-green-600" : "text-blue-600"}`}>
-                        {uploadProgress}
-                      </p>
-                    )}
-                    {form.videoUrl && urlMode === "upload" && (
-                      <p className="text-xs text-green-600 mt-1 truncate">✓ Ready to save</p>
+                  <div className="space-y-2">
+                    <input
+                      value={form.videoUrl}
+                      onChange={(e) => setForm({ ...form, videoUrl: convertDriveLink(e.target.value) })}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
+                      placeholder="Paste Google Drive share link..."
+                    />
+                    <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700 space-y-1">
+                      <p className="font-medium">How to share from Google Drive:</p>
+                      <p>1. Upload video to Google Drive</p>
+                      <p>2. Right-click → &ldquo;Share&rdquo; → &ldquo;Anyone with the link&rdquo;</p>
+                      <p>3. Copy link and paste above</p>
+                    </div>
+                    {form.videoUrl && (
+                      <p className="text-xs text-green-600">✓ Link ready</p>
                     )}
                   </div>
                 )}
@@ -339,7 +316,7 @@ export function AdminVideos() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  disabled={saving || uploadProgress === "Uploading..."}
+                  disabled={saving}
                   className="flex-1 bg-brand-purple text-white py-2 rounded-xl text-sm font-medium hover:bg-purple-800 transition-colors disabled:opacity-50"
                 >
                   {saving ? "Saving..." : editId ? "Save Changes" : "Add Video"}
