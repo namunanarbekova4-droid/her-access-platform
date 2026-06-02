@@ -8,10 +8,15 @@ export async function requireAdmin() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { isAdmin: true },
+    select: { isAdmin: true, email: true },
   });
 
-  return user?.isAdmin ? session : null;
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const isAllowed =
+    user?.isAdmin ||
+    (adminEmail && user?.email?.toLowerCase() === adminEmail.toLowerCase());
+
+  return isAllowed ? session : null;
 }
 
 export function isAdminEmail(email: string | null | undefined): boolean {
