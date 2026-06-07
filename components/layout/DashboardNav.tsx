@@ -16,6 +16,7 @@ import {
   Eye,
   Megaphone,
   Heart,
+  Linkedin,
 } from "lucide-react";
 import { useState } from "react";
 import { StealthMode } from "@/components/stealth/StealthMode";
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/stories", label: "Stories", icon: Star },
   { href: "/news", label: "Announcements", icon: Megaphone },
   { href: "/reviews", label: "Reviews", icon: Heart },
+  { href: "/linkedin", label: "LinkedIn Builder", icon: Linkedin },
 ];
 
 export function DashboardNav() {

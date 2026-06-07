@@ -161,6 +161,59 @@ Make it realistic, emotionally moving, and empowering. No clichés. Return ONLY 
   return result.response.text();
 }
 
+export async function generateLinkedInProfile(data: {
+  name: string;
+  currentRole: string;
+  yearsExperience: string;
+  education: string;
+  skills: string;
+  achievements: string;
+  goals: string;
+  tone: "professional" | "creative" | "warm";
+  language: string;
+}): Promise<string> {
+  const client = getGeminiClient();
+  const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  const toneGuide = {
+    professional: "formal, authoritative, and results-oriented",
+    creative: "innovative, energetic, and story-driven",
+    warm: "approachable, empathetic, and human",
+  }[data.tone];
+
+  const prompt = `You are an expert LinkedIn profile writer. Create a complete, polished LinkedIn profile for this person.
+
+Person's details:
+- Name: ${data.name}
+- Current role / target role: ${data.currentRole}
+- Years of experience: ${data.yearsExperience}
+- Education: ${data.education}
+- Key skills: ${data.skills}
+- Notable achievements: ${data.achievements}
+- Career goals: ${data.goals}
+- Desired tone: ${toneGuide}
+
+Generate a complete LinkedIn profile package. Return a JSON object with this EXACT structure:
+{
+  "headline": "Compelling headline under 220 characters",
+  "about": "Engaging About section (3-5 paragraphs, 2000-2500 characters). Start with a hook, tell the story, highlight value, end with CTA.",
+  "experience": [
+    {
+      "title": "Job title",
+      "highlights": ["Achievement bullet 1 (starts with action verb, has metrics)", "Achievement bullet 2", "Achievement bullet 3"]
+    }
+  ],
+  "skills": ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5", "Skill 6", "Skill 7", "Skill 8", "Skill 9", "Skill 10"],
+  "summary_tips": ["Tip 1 to improve profile visibility", "Tip 2", "Tip 3"],
+  "connection_message": "A short, warm connection request message (under 300 characters)"
+}
+
+Make it genuinely impressive — the kind of profile that gets recruiters reaching out. Use strong action verbs. Add metrics where possible (estimate if needed). Return ONLY valid JSON, no markdown.`;
+
+  const result = await model.generateContent(prompt);
+  return result.response.text();
+}
+
 export async function generateMultipleStories(
   count: number = 3
 ): Promise<string> {

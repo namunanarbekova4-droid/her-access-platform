@@ -12,6 +12,7 @@ import {
   Star,
   ArrowRight,
   Sparkles,
+  Linkedin,
 } from "lucide-react";
 
 interface DashboardContentProps {
@@ -60,6 +61,14 @@ const quickActions = [
     description: "Be inspired today",
     color: "bg-amber-50 text-amber-600",
     bgGradient: "from-amber-50 to-yellow-50",
+  },
+  {
+    href: "/linkedin",
+    icon: Linkedin,
+    label: "LinkedIn",
+    description: "Build your profile",
+    color: "bg-sky-50 text-[#0A66C2]",
+    bgGradient: "from-sky-50 to-blue-50",
   },
 ];
 
@@ -148,7 +157,7 @@ export function DashboardContent({
         <h2 className="text-lg font-semibold text-foreground mb-4">
           Explore
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {quickActions.map((action, i) => {
             const Icon = action.icon;
             return (
