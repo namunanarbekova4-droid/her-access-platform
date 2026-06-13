@@ -13,8 +13,9 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json() as {
       messages: Array<{ role: string; content: string }>;
+      mode?: string;
     };
-    const { messages } = body;
+    const { messages, mode } = body;
 
     if (!messages?.length) {
       return NextResponse.json({ error: "Messages required" }, { status: 400 });
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
       educationLevel: profile?.educationLevel ?? undefined,
       interests: profile?.interests ?? undefined,
       name: user?.nickname ?? user?.name ?? undefined,
+      mode: mode ?? "default",
     });
 
     const lastMessage = messages[messages.length - 1];

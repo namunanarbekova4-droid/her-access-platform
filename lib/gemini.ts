@@ -8,6 +8,16 @@ const getGeminiClient = () => {
   return new GoogleGenerativeAI(apiKey);
 };
 
+const MODE_INSTRUCTIONS: Record<string, string> = {
+  default: `Be warm, supportive, and encouraging. Celebrate effort. Answer questions clearly and offer to go deeper if needed.`,
+  explain: `The user wants a clear explanation. Break the topic down step by step using simple words. Use analogies and real-world examples. End with "Does that make sense? Want me to explain any part differently?"`,
+  exam: `The user is in exam prep mode. After answering, create 2–3 practice questions related to the topic. Give hints if they ask, and praise correct answers. Format questions clearly numbered.`,
+  stepbystep: `The user needs a step-by-step guide. Present ONE step at a time. After each step, say "Ready for the next step? Just say 'next'!" Do not reveal all steps at once.`,
+  coach: `Be a high-energy motivational coach. Use energetic, enthusiastic language. Celebrate every attempt. Push the user to go further. Use emojis sparingly for energy. Be direct and action-oriented.`,
+  homework: `The user needs homework help. Do NOT give direct answers to homework — instead, guide them to discover the answer. Ask leading questions. Explain the concept behind the problem first.`,
+  language: `The user wants language/conversation practice. Respond naturally and then gently note any grammar or phrasing improvements at the end in a friendly way. Encourage them to keep speaking/writing.`,
+};
+
 export async function generateMentorResponse(
   messages: Array<{ role: string; content: string }>,
   userProfile: {
@@ -16,6 +26,7 @@ export async function generateMentorResponse(
     educationLevel?: string;
     interests?: string;
     name?: string;
+    mode?: string;
   }
 ): Promise<string> {
   const client = getGeminiClient();
@@ -30,6 +41,8 @@ export async function generateMentorResponse(
   };
 
   const lang = languageMap[userProfile.language] ?? "English";
+  const modeId = userProfile.mode ?? "default";
+  const modeInstruction = MODE_INSTRUCTIONS[modeId] ?? MODE_INSTRUCTIONS.default!;
 
   const systemContext = `You are Noor, a warm, intelligent, and empowering AI mentor for Her Access — a platform that helps girls in restricted regions access education.
 
@@ -47,13 +60,8 @@ User profile:
 - Education level: ${userProfile.educationLevel ?? "not specified"}
 - Interests: ${userProfile.interests ?? "various topics"}
 
-You can:
-- Explain complex concepts simply
-- Create personalized study plans
-- Answer academic questions
-- Provide emotional encouragement
-- Recommend learning paths
-- Motivate during difficult times
+CURRENT MODE — ${modeId.toUpperCase()}:
+${modeInstruction}
 
 Always respond in ${lang}. Be warm, clear, and empowering.`;
 

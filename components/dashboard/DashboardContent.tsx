@@ -2,8 +2,6 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import {
   MessageCircle,
   BookOpen,
@@ -12,198 +10,232 @@ import {
   Star,
   ArrowRight,
   Sparkles,
+  Megaphone,
+  Heart,
+  Zap,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const QUOTES = [
+  { text: "Education is the most powerful weapon which you can use to change the world.", author: "Nelson Mandela" },
+  { text: "The beautiful thing about learning is that nobody can take it away from you.", author: "B.B. King" },
+  { text: "An investment in knowledge pays the best interest.", author: "Benjamin Franklin" },
+  { text: "Knowledge is power. Information is liberating.", author: "Kofi Annan" },
+  { text: "Every expert was once a beginner. Every achievement begins with the courage to try.", author: "" },
+  { text: "The more that you read, the more things you will know.", author: "Dr. Seuss" },
+  { text: "She believed she could, so she did.", author: "" },
+];
+
+const FEATURES = [
+  { href: "/library", icon: Library, label: "Library", desc: "Courses & lessons", color: "from-emerald-50 to-teal-50", iconColor: "text-emerald-600 bg-emerald-100" },
+  { href: "/circles", icon: Users, label: "Circles", desc: "Peer learning", color: "from-pink-50 to-rose-50", iconColor: "text-pink-600 bg-pink-100" },
+  { href: "/stories", icon: Star, label: "Stories", desc: "Be inspired", color: "from-amber-50 to-yellow-50", iconColor: "text-amber-600 bg-amber-100" },
+  { href: "/news", icon: Megaphone, label: "News", desc: "Announcements", color: "from-blue-50 to-indigo-50", iconColor: "text-blue-600 bg-blue-100" },
+  { href: "/reviews", icon: Heart, label: "Reviews", desc: "Community", color: "from-violet-50 to-purple-50", iconColor: "text-violet-600 bg-violet-100" },
+];
 
 interface DashboardContentProps {
   greeting: string;
   hasProfile: boolean;
   goals: string | null;
+  name: string | null;
+  messageCount: number;
 }
 
-const quickActions = [
-  {
-    href: "/mentor",
-    icon: MessageCircle,
-    label: "Talk to Noor",
-    description: "Your AI mentor is ready",
-    color: "bg-purple-50 text-brand-purple",
-    bgGradient: "from-purple-50 to-brand-lavender-light",
-  },
-  {
-    href: "/learning",
-    icon: BookOpen,
-    label: "Learning Path",
-    description: "Continue your roadmap",
-    color: "bg-blue-50 text-blue-600",
-    bgGradient: "from-blue-50 to-indigo-50",
-  },
-  {
-    href: "/library",
-    icon: Library,
-    label: "Quiet Library",
-    description: "Offline lessons",
-    color: "bg-green-50 text-green-600",
-    bgGradient: "from-green-50 to-emerald-50",
-  },
-  {
-    href: "/circles",
-    icon: Users,
-    label: "Peer Circles",
-    description: "Connect anonymously",
-    color: "bg-pink-50 text-pink-600",
-    bgGradient: "from-pink-50 to-rose-50",
-  },
-  {
-    href: "/stories",
-    icon: Star,
-    label: "Stories",
-    description: "Be inspired today",
-    color: "bg-amber-50 text-amber-600",
-    bgGradient: "from-amber-50 to-yellow-50",
-  },
-];
+export function DashboardContent({ greeting, hasProfile, goals, name, messageCount }: DashboardContentProps) {
+  const quote = QUOTES[new Date().getDay() % QUOTES.length]!;
+  const goalList = goals?.split(", ").slice(0, 2) ?? [];
+  const firstName = name?.split(" ")[0] ?? "there";
 
-export function DashboardContent({
-  greeting,
-  hasProfile,
-  goals,
-}: DashboardContentProps) {
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-5xl mx-auto">
-      {/* Greeting */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-8"
-      >
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-1">
-          {greeting} 🌸
-        </h1>
-        <p className="text-muted text-sm">
-          {goals
-            ? `Continuing your journey in: ${goals.split(", ").slice(0, 2).join(", ")}`
-            : "Ready to learn something amazing today?"}
-        </p>
-      </motion.div>
+    <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-5xl mx-auto pb-24 lg:pb-8">
 
-      {/* Setup prompt */}
-      {!hasProfile && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-6"
-        >
-          <div className="bg-gradient-to-r from-brand-purple to-brand-purple-light rounded-3xl p-6 flex items-center gap-4">
-            <Sparkles className="text-brand-lavender flex-shrink-0" size={28} />
+      {/* Hero Greeting */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-6">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-purple via-brand-purple-light to-[#7C3AED] p-6 sm:p-8 shadow-glow">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24 pointer-events-none" />
+          <div className="relative flex items-start justify-between gap-4">
             <div className="flex-1">
-              <p className="text-white font-semibold mb-1">
-                Complete your profile to unlock your AI mentor
-              </p>
-              <p className="text-white/70 text-sm">
-                Tell us your goals and we&apos;ll create your personalized learning path
-              </p>
+              <p className="text-brand-lavender/80 text-sm font-medium mb-1">{greeting}</p>
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-white mb-2 leading-tight">
+                Welcome back, {firstName} 🌸
+              </h1>
+              {goalList.length > 0 ? (
+                <p className="text-white/70 text-sm">
+                  Your focus: <span className="text-brand-lavender font-medium">{goalList.join(" · ")}</span>
+                </p>
+              ) : (
+                <p className="text-white/70 text-sm">Ready to learn something amazing today?</p>
+              )}
+              {messageCount > 0 && (
+                <div className="flex items-center gap-1.5 mt-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-white/60 text-xs">{messageCount} conversations with Noor</span>
+                </div>
+              )}
             </div>
-            <Link href="/onboarding">
-              <Button variant="secondary" size="sm">
-                Set up
-                <ArrowRight size={14} />
-              </Button>
+            <Link
+              href="/mentor"
+              className="flex-shrink-0 flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white text-sm font-medium px-4 py-2.5 rounded-2xl transition-all duration-200 group border border-white/20"
+            >
+              <Sparkles size={14} className="group-hover:rotate-12 transition-transform" />
+              Ask Noor
+              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
+        </div>
+      </motion.div>
+
+      {/* Profile Setup Banner */}
+      {!hasProfile && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
+          <Link href="/onboarding">
+            <div className="flex items-center gap-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 hover:shadow-soft transition-all group cursor-pointer">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl flex-shrink-0">✨</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-900">Set up your learning profile</p>
+                <p className="text-xs text-amber-700 mt-0.5">Tell us your goals to unlock a personalised path</p>
+              </div>
+              <ArrowRight size={16} className="text-amber-600 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+            </div>
+          </Link>
         </motion.div>
       )}
 
-      {/* AI Mentor highlight */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        className="mb-6"
-      >
-        <Link href="/mentor">
-          <div className="bg-gradient-to-br from-brand-purple to-brand-purple-light rounded-3xl p-6 cursor-pointer hover:shadow-glow transition-all duration-300 group">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-brand-lavender/20 flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform">
-                🌸
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-white font-semibold">Noor — Your AI Mentor</span>
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse-soft" />
+      {/* Bento Grid — two cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        {/* AI Mentor */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }}>
+          <Link href="/mentor">
+            <div className="group relative overflow-hidden bg-white rounded-3xl border border-border shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 p-5 h-full min-h-[148px] flex flex-col justify-between cursor-pointer">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-lavender-light rounded-full -translate-y-16 translate-x-16 pointer-events-none opacity-50" />
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-purple to-brand-purple-light flex items-center justify-center text-xl shadow-soft">🌸</div>
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">Noor — AI Mentor</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                      <span className="text-xs text-muted">Always available</span>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-white/70 text-sm">
-                  Ready to help you learn, plan, and grow. Ask me anything!
+                <p className="text-xs text-muted leading-relaxed">Ask anything — lessons, advice, homework, or motivation. I speak your language.</p>
+              </div>
+              <div className="flex items-center gap-1.5 mt-4 text-brand-purple text-xs font-semibold group-hover:gap-2.5 transition-all">
+                Start a conversation <ArrowRight size={12} />
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* Learning Path */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22, duration: 0.4 }}>
+          <Link href="/learning">
+            <div className="group relative overflow-hidden bg-white rounded-3xl border border-border shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 p-5 h-full min-h-[148px] flex flex-col justify-between cursor-pointer">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -translate-y-16 translate-x-16 pointer-events-none opacity-60" />
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center">
+                    <BookOpen size={20} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">Learning Path</h3>
+                    <p className="text-xs text-muted">{hasProfile ? "Your personalised roadmap" : "Create your roadmap"}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted leading-relaxed">
+                  {hasProfile ? "Your AI-generated 12-week plan with milestones and daily schedules." : "Complete your profile to get a personalised AI study plan created just for you."}
                 </p>
               </div>
-              <ArrowRight className="text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all" size={20} />
+              <div className="flex items-center gap-1.5 mt-4 text-blue-600 text-xs font-semibold group-hover:gap-2.5 transition-all">
+                {hasProfile ? "View your path" : "Get started"} <ArrowRight size={12} />
+              </div>
             </div>
-          </div>
-        </Link>
-      </motion.div>
+          </Link>
+        </motion.div>
+      </div>
 
-      {/* Quick actions grid */}
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
-          Explore
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {quickActions.map((action, i) => {
-            const Icon = action.icon;
+      {/* Quick Actions */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-6">
+        <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3 px-1">Explore</h2>
+        <div className="grid grid-cols-5 gap-2 sm:gap-3">
+          {FEATURES.map((f, i) => {
+            const Icon = f.icon;
             return (
               <motion.div
-                key={action.href}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 * i + 0.3 }}
+                key={f.href}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.35 + i * 0.06, duration: 0.3 }}
               >
-                <Link href={action.href}>
-                  <div
-                    className={`bg-gradient-to-br ${action.bgGradient} rounded-2xl p-4 border border-border hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 cursor-pointer`}
-                  >
-                    <div
-                      className={`w-10 h-10 rounded-xl ${action.color} flex items-center justify-center mb-3`}
-                    >
-                      <Icon size={18} />
+                <Link href={f.href}>
+                  <div className={cn(
+                    "bg-gradient-to-br rounded-2xl p-2.5 sm:p-3 border border-border hover:shadow-soft hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col items-center text-center gap-1.5",
+                    f.color
+                  )}>
+                    <div className={cn("w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0", f.iconColor)}>
+                      <Icon size={15} />
                     </div>
-                    <p className="text-sm font-semibold text-foreground leading-tight">
-                      {action.label}
-                    </p>
-                    <p className="text-xs text-muted mt-0.5">{action.description}</p>
+                    <p className="text-[11px] font-semibold text-foreground leading-none">{f.label}</p>
                   </div>
                 </Link>
               </motion.div>
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Daily inspiration */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-      >
-        <Card className="bg-gradient-to-br from-brand-lavender-light to-white">
-          <div className="flex items-start gap-4">
-            <div className="text-3xl">💫</div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground mb-1">
-                Today&apos;s Thought
-              </h3>
-              <p className="text-sm text-muted italic leading-relaxed">
-                &ldquo;Every expert was once a beginner. Every achievement begins with the courage to try.&rdquo;
-              </p>
-              <Link href="/stories">
-                <p className="text-xs text-brand-purple font-medium mt-3 hover:underline">
-                  Read more stories →
-                </p>
-              </Link>
+      {/* Bottom Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Daily quote */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+          <div className="bg-gradient-to-br from-brand-lavender-light to-white rounded-3xl border border-brand-lavender/30 p-5 h-full">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">💫</span>
+              <h3 className="text-sm font-semibold text-foreground">Today&apos;s Thought</h3>
+            </div>
+            <blockquote className="text-sm text-muted italic leading-relaxed mb-3">
+              &ldquo;{quote.text}&rdquo;
+            </blockquote>
+            {quote.author && (
+              <p className="text-xs text-brand-purple/60 font-medium">— {quote.author}</p>
+            )}
+            <Link href="/stories" className="inline-flex items-center gap-1 text-xs text-brand-purple font-medium mt-3 hover:gap-1.5 transition-all">
+              More stories <ArrowRight size={11} />
+            </Link>
+          </div>
+        </motion.div>
+
+        {/* Quick jump */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+          <div className="bg-white rounded-3xl border border-border shadow-card p-5 h-full">
+            <div className="flex items-center gap-2 mb-3">
+              <Zap size={15} className="text-brand-purple" />
+              <h3 className="text-sm font-semibold text-foreground">Quick Actions</h3>
+            </div>
+            <div className="space-y-1.5">
+              {[
+                { href: "/mentor", label: "Ask Noor a question", icon: MessageCircle, color: "text-brand-purple" },
+                { href: "/library", label: "Continue a course", icon: Library, color: "text-emerald-600" },
+                { href: "/circles", label: "Check peer circles", icon: Users, color: "text-pink-600" },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-brand-lavender-light transition-colors group cursor-pointer">
+                      <Icon size={14} className={cn(item.color, "flex-shrink-0")} />
+                      <span className="text-xs text-foreground group-hover:text-brand-purple transition-colors font-medium">{item.label}</span>
+                      <ArrowRight size={11} className="text-muted ml-auto group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
-        </Card>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 }

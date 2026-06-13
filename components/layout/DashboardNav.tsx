@@ -16,9 +16,10 @@ import {
   Eye,
   Megaphone,
   Heart,
+  ChevronUp,
 } from "lucide-react";
-import { useState } from "react";
-import { StealthMode } from "@/components/stealth/StealthMode";
+import { useRef, useState, useEffect } from "react";
+import { StealthMode, type StealthTheme } from "@/components/stealth/StealthMode";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -31,12 +32,31 @@ const navItems = [
   { href: "/reviews", label: "Reviews", icon: Heart },
 ];
 
+const THEMES: { id: StealthTheme; label: string; emoji: string; desc: string }[] = [
+  { id: "recipe", emoji: "👩‍🍳", label: "Recipe Site", desc: "RecipeNook cooking blog" },
+  { id: "weather", emoji: "🌤", label: "Weather App", desc: "WeatherNow forecast" },
+  { id: "news", emoji: "📰", label: "News Reader", desc: "DailyBrief articles" },
+  { id: "calculator", emoji: "🔢", label: "Calculator", desc: "Simple calculator" },
+];
+
 export function DashboardNav() {
   const pathname = usePathname();
-  const [stealthActive, setStealthActive] = useState(false);
+  const [stealthTheme, setStealthTheme] = useState<StealthTheme | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
-  if (stealthActive) {
-    return <StealthMode onExit={() => setStealthActive(false)} />;
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  if (stealthTheme) {
+    return <StealthMode theme={stealthTheme} onExit={() => setStealthTheme(null)} />;
   }
 
   return (
@@ -72,13 +92,37 @@ export function DashboardNav() {
         </nav>
 
         <div className="p-4 border-t border-border space-y-2">
-          <button
-            onClick={() => setStealthActive(true)}
-            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 w-full transition-all duration-200"
-          >
-            <Eye size={18} />
-            Safe Mode
-          </button>
+          {/* Safe Mode with theme picker */}
+          <div className="relative" ref={pickerRef}>
+            <button
+              onClick={() => setPickerOpen((v) => !v)}
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 w-full transition-all duration-200"
+            >
+              <Eye size={18} />
+              Safe Mode
+              <ChevronUp size={14} className={cn("ml-auto transition-transform duration-200", pickerOpen ? "rotate-180" : "")} />
+            </button>
+
+            {pickerOpen && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-2xl border border-border shadow-lg overflow-hidden">
+                <p className="text-[10px] font-semibold text-muted uppercase tracking-wider px-3 pt-3 pb-1.5">Choose disguise</p>
+                {THEMES.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => { setStealthTheme(t.id); setPickerOpen(false); }}
+                    className="flex items-center gap-3 px-3 py-2.5 w-full hover:bg-brand-lavender-light transition-colors text-left"
+                  >
+                    <span className="text-xl w-7 text-center">{t.emoji}</span>
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">{t.label}</p>
+                      <p className="text-[10px] text-muted">{t.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
             className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-muted hover:text-error hover:bg-red-50 w-full transition-all duration-200"
@@ -108,26 +152,55 @@ export function DashboardNav() {
                     : "text-muted hover:text-brand-purple"
                 )}
               >
-                <Icon
-                  size={20}
-                  className={cn(
-                    "transition-all",
-                    active && "text-brand-purple"
-                  )}
-                />
+                <Icon size={20} className={cn("transition-all", active && "text-brand-purple")} />
                 <span className="truncate">{item.label.split(" ")[0]}</span>
               </Link>
             );
           })}
-          <button
-            onClick={() => setStealthActive(true)}
-            className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium text-amber-600 min-w-[52px]"
-          >
-            <Eye size={20} />
-            <span>Safe</span>
-          </button>
+          {/* Mobile Safe Mode — cycles through themes on tap */}
+          <MobileSafeButton onActivate={(theme) => setStealthTheme(theme)} />
         </div>
       </nav>
     </>
+  );
+}
+
+function MobileSafeButton({ onActivate }: { onActivate: (theme: StealthTheme) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      {open && (
+        <div className="absolute bottom-full right-0 mb-2 bg-white rounded-2xl border border-border shadow-lg overflow-hidden w-44">
+          <p className="text-[10px] font-semibold text-muted uppercase tracking-wider px-3 pt-3 pb-1">Disguise as</p>
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => { onActivate(t.id); setOpen(false); }}
+              className="flex items-center gap-2 px-3 py-2 w-full hover:bg-brand-lavender-light text-left"
+            >
+              <span className="text-base">{t.emoji}</span>
+              <span className="text-xs font-medium text-foreground">{t.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium text-amber-600 min-w-[52px]"
+      >
+        <Eye size={20} />
+        <span>Safe</span>
+      </button>
+    </div>
   );
 }
