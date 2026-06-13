@@ -13,8 +13,10 @@ import {
   Megaphone,
   Heart,
   Zap,
+  Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Confetti } from "@/components/ui/Confetti";
 
 const QUOTES = [
   { text: "Education is the most powerful weapon which you can use to change the world.", author: "Nelson Mandela" },
@@ -34,21 +36,42 @@ const FEATURES = [
   { href: "/reviews", icon: Heart, label: "Reviews", desc: "Community", color: "from-violet-50 to-purple-50", iconColor: "text-violet-600 bg-violet-100" },
 ];
 
+const MILESTONE_MESSAGES: Record<number, string> = {
+  1: "You sent your first message to Noor!",
+  5: "5 conversations with Noor — you're building a habit!",
+  10: "10 conversations — you're on a real learning journey!",
+  25: "25 chats with Noor — incredible dedication!",
+  50: "50 conversations — you're a true learner! 🌟",
+  100: "100 conversations — you're unstoppable! 💜",
+  250: "250 chats — Noor is so proud of you!",
+  500: "500 conversations — legendary learner! 🏆",
+};
+
 interface DashboardContentProps {
   greeting: string;
   hasProfile: boolean;
   goals: string | null;
   name: string | null;
   messageCount: number;
+  streak: number;
+  latestMilestone: number | null;
 }
 
-export function DashboardContent({ greeting, hasProfile, goals, name, messageCount }: DashboardContentProps) {
+export function DashboardContent({ greeting, hasProfile, goals, name, messageCount, streak, latestMilestone }: DashboardContentProps) {
   const quote = QUOTES[new Date().getDay() % QUOTES.length]!;
   const goalList = goals?.split(", ").slice(0, 2) ?? [];
   const firstName = name?.split(" ")[0] ?? "there";
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-5xl mx-auto pb-24 lg:pb-8">
+
+      {/* Milestone confetti */}
+      {latestMilestone && MILESTONE_MESSAGES[latestMilestone] && (
+        <Confetti
+          milestoneCount={latestMilestone}
+          message={MILESTONE_MESSAGES[latestMilestone]!}
+        />
+      )}
 
       {/* Hero Greeting */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-6">
@@ -68,12 +91,22 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
               ) : (
                 <p className="text-white/70 text-sm">Ready to learn something amazing today?</p>
               )}
-              {messageCount > 0 && (
-                <div className="flex items-center gap-1.5 mt-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-white/60 text-xs">{messageCount} conversations with Noor</span>
-                </div>
-              )}
+              <div className="flex flex-wrap items-center gap-3 mt-3">
+                {messageCount > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-white/60 text-xs">{messageCount} conversations</span>
+                  </div>
+                )}
+                {streak > 0 && (
+                  <div className="flex items-center gap-1.5 bg-white/10 rounded-full px-2.5 py-1">
+                    <Flame size={12} className="text-orange-300" />
+                    <span className="text-white/90 text-xs font-semibold">
+                      {streak} day{streak !== 1 ? "s" : ""} streak
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
             <Link
               href="/mentor"
@@ -208,14 +241,14 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
           </div>
         </motion.div>
 
-        {/* Quick jump */}
+        {/* Quick actions + streak card */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-          <div className="bg-white rounded-3xl border border-border shadow-card p-5 h-full">
+          <div className="bg-white rounded-3xl border border-border shadow-card p-5 h-full flex flex-col">
             <div className="flex items-center gap-2 mb-3">
               <Zap size={15} className="text-brand-purple" />
               <h3 className="text-sm font-semibold text-foreground">Quick Actions</h3>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 flex-1">
               {[
                 { href: "/mentor", label: "Ask Noor a question", icon: MessageCircle, color: "text-brand-purple" },
                 { href: "/library", label: "Continue a course", icon: Library, color: "text-emerald-600" },
@@ -233,6 +266,21 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
                 );
               })}
             </div>
+
+            {/* Streak mini-card */}
+            {streak >= 2 && (
+              <div className="mt-3 pt-3 border-t border-border flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <Flame size={14} className="text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">
+                    {streak}-day learning streak!
+                  </p>
+                  <p className="text-[10px] text-muted">Come back tomorrow to keep it going</p>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
