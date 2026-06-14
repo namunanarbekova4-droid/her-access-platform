@@ -45,7 +45,12 @@ export async function registerUser(data: RegisterData): Promise<RegisterResult> 
     });
 
     return { success: true };
-  } catch {
+  } catch (err) {
+    console.error("[registerUser] error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("Unique constraint") || msg.includes("unique")) {
+      return { success: false, error: "An account with this email already exists." };
+    }
     return { success: false, error: "Something went wrong. Please try again." };
   }
 }
