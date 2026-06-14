@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -16,6 +16,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+  // Wake up Neon DB as soon as the page loads
+  useEffect(() => {
+    fetch("/api/health").catch(() => {});
+  }, []);
 
   const validate = () => {
     const errs: { email?: string; password?: string } = {};
