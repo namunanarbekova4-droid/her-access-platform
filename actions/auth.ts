@@ -17,8 +17,15 @@ interface RegisterResult {
   error?: string;
 }
 
-async function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+// Use Neon HTTP client for registration — bypasses TCP cold-start entirely
+function getNeonSql() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { neon } = require("@neondatabase/serverless");
+  return neon(process.env.DATABASE_URL!);
+}
+
+function generateId(): string {
+  return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
 }
 
 export async function registerUser(data: RegisterData): Promise<RegisterResult> {
@@ -27,51 +34,36 @@ export async function registerUser(data: RegisterData): Promise<RegisterResult> 
     return { success: false, error: "Invalid language selection." };
   }
 
-  // Retry up to 2 times to handle Neon cold-start connection delays
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const existing = await prisma.user.findUnique({
-        where: { email: data.email.toLowerCase().trim() },
-        select: { id: true },
-      });
+  try {
+    const sql = getNeonSql();
+    const email = data.email.toLowerCase().trim();
 
-      if (existing) {
-        return { success: false, error: "An account with this email already exists." };
-      }
-
-      // bcrypt cost 10 — secure and fast enough for serverless (≈100ms vs ≈300ms for 12)
-      const hashedPassword = await bcrypt.hash(data.password, 10);
-
-      await prisma.user.create({
-        data: {
-          name: data.name.trim(),
-          nickname: data.nickname?.trim() ?? null,
-          email: data.email.toLowerCase().trim(),
-          password: hashedPassword,
-          language: data.language,
-        },
-      });
-
-      return { success: true };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[registerUser] attempt ${attempt} error:`, msg);
-
-      if (msg.includes("Unique constraint") || msg.includes("unique")) {
-        return { success: false, error: "An account with this email already exists." };
-      }
-
-      if (attempt < 3) {
-        // Wait for DB to wake from cold start before retrying
-        await sleep(attempt * 1500);
-        continue;
-      }
-
-      return { success: false, error: "Could not connect to the database. Please try again in a few seconds." };
+    // HTTP query — no TCP connection, no cold-start timeout
+    const existing = await sql`SELECT id FROM "User" WHERE email = ${email} LIMIT 1`;
+    if (existing.length > 0) {
+      return { success: false, error: "An account with this email already exists." };
     }
-  }
 
-  return { success: false, error: "Something went wrong. Please try again." };
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const id = generateId();
+    const name = data.name.trim();
+    const nickname = data.nickname?.trim() ?? null;
+    const now = new Date().toISOString();
+
+    await sql`
+      INSERT INTO "User" (id, name, nickname, email, password, language, "onboardingDone", "isAdmin", "createdAt", "updatedAt", "emailVerified", image)
+      VALUES (${id}, ${name}, ${nickname}, ${email}, ${hashedPassword}, ${data.language}, false, false, ${now}, ${now}, NULL, NULL)
+    `;
+
+    return { success: true };
+  } catch (err) {
+    console.error("[registerUser] error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("unique") || msg.includes("duplicate") || msg.includes("Unique")) {
+      return { success: false, error: "An account with this email already exists." };
+    }
+    return { success: false, error: `Registration failed: ${msg.slice(0, 120)}` };
+  }
 }
 
 interface OnboardingData {
@@ -84,41 +76,34 @@ interface OnboardingData {
 }
 
 export async function saveOnboarding(data: OnboardingData): Promise<RegisterResult> {
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      await prisma.userProfile.upsert({
-        where: { userId: data.userId },
-        create: {
-          userId: data.userId,
-          educationLevel: data.educationLevel,
-          learningGoals: data.learningGoals,
-          timeAvailable: data.timeAvailable,
-          careerDream: data.careerDream,
-          interests: data.interests,
-        },
-        update: {
-          educationLevel: data.educationLevel,
-          learningGoals: data.learningGoals,
-          timeAvailable: data.timeAvailable,
-          careerDream: data.careerDream,
-          interests: data.interests,
-        },
-      });
+  try {
+    await prisma.userProfile.upsert({
+      where: { userId: data.userId },
+      create: {
+        userId: data.userId,
+        educationLevel: data.educationLevel,
+        learningGoals: data.learningGoals,
+        timeAvailable: data.timeAvailable,
+        careerDream: data.careerDream,
+        interests: data.interests,
+      },
+      update: {
+        educationLevel: data.educationLevel,
+        learningGoals: data.learningGoals,
+        timeAvailable: data.timeAvailable,
+        careerDream: data.careerDream,
+        interests: data.interests,
+      },
+    });
 
-      await prisma.user.update({
-        where: { id: data.userId },
-        data: { onboardingDone: true },
-      });
+    await prisma.user.update({
+      where: { id: data.userId },
+      data: { onboardingDone: true },
+    });
 
-      return { success: true };
-    } catch (err) {
-      console.error(`[saveOnboarding] attempt ${attempt} error:`, err);
-      if (attempt < 2) {
-        await sleep(1500);
-        continue;
-      }
-      return { success: false, error: "Failed to save your profile. Please try again." };
-    }
+    return { success: true };
+  } catch (err) {
+    console.error("[saveOnboarding] error:", err);
+    return { success: false, error: "Failed to save your profile. Please try again." };
   }
-  return { success: false, error: "Failed to save your profile." };
 }

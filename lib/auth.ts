@@ -10,7 +10,13 @@ if (process.env.NEXTAUTH_URL) {
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+
+// Use Neon's HTTP client for auth — avoids TCP cold-start timeouts in serverless
+function getNeonSql() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { neon } = require("@neondatabase/serverless");
+  return neon(process.env.DATABASE_URL!);
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -23,23 +29,32 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+        try {
+          const sql = getNeonSql();
+          const rows = await sql`
+            SELECT id, email, name, password, language, "onboardingDone", "isAdmin"
+            FROM "User"
+            WHERE email = ${credentials.email.toLowerCase()}
+            LIMIT 1
+          `;
+          const user = rows[0];
+          if (!user || !user.password) return null;
 
-        if (!user || !user.password) return null;
+          const isValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isValid) return null;
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) return null;
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          language: user.language,
-          onboardingDone: user.onboardingDone,
-          isAdmin: user.isAdmin,
-        };
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            language: user.language,
+            onboardingDone: user.onboardingDone,
+            isAdmin: user.isAdmin,
+          };
+        } catch (err) {
+          console.error("[authorize] error:", err);
+          return null;
+        }
       },
     }),
   ],
