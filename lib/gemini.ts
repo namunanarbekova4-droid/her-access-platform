@@ -30,7 +30,7 @@ export async function generateMentorResponse(
   }
 ): Promise<string> {
   const client = getGeminiClient();
-  const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const languageMap: Record<string, string> = {
     en: "English",
@@ -99,7 +99,7 @@ export async function generateLearningPath(profile: {
   language: string;
 }): Promise<string> {
   const client = getGeminiClient();
-  const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const prompt = `Create a personalized 12-week learning roadmap for a girl with these details:
 - Learning goals: ${profile.goals}
@@ -145,7 +145,7 @@ export async function generateInspirationalStory(profile: {
   language: string;
 }): Promise<string> {
   const client = getGeminiClient();
-  const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const prompt = `Write a short, realistic, emotionally resonant inspirational story (200-250 words) about a young woman who overcame restrictions to achieve education and success.
 
@@ -173,7 +173,7 @@ export async function generateMultipleStories(
   count: number = 3
 ): Promise<string> {
   const client = getGeminiClient();
-  const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const prompt = `Generate ${count} different short inspirational stories about young women from restricted regions who achieved educational success. Each story should be unique and cover different fields (technology, medicine, arts, business, science).
 
