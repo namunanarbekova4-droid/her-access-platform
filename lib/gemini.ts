@@ -87,8 +87,19 @@ Always respond in ${lang}. Be warm, clear, and empowering.`;
     ],
   });
 
-  const result = await chat.sendMessage(lastMessage?.content ?? "Hello");
-  return result.response.text();
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const result = await chat.sendMessage(lastMessage?.content ?? "Hello");
+      return result.response.text();
+    } catch (err) {
+      lastError = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("503") && !msg.includes("overloaded") && !msg.includes("high demand")) throw err;
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    }
+  }
+  throw lastError;
 }
 
 export async function generateLearningPath(profile: {
