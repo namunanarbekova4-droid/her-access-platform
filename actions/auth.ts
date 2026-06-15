@@ -2,7 +2,6 @@
 
 import bcrypt from "bcryptjs";
 import { neon } from "@neondatabase/serverless";
-import { prisma } from "@/lib/prisma";
 import { LANGUAGES } from "@/lib/utils";
 
 interface RegisterData {
@@ -78,33 +77,31 @@ interface OnboardingData {
 
 export async function saveOnboarding(data: OnboardingData): Promise<RegisterResult> {
   try {
-    await prisma.userProfile.upsert({
-      where: { userId: data.userId },
-      create: {
-        userId: data.userId,
-        educationLevel: data.educationLevel,
-        learningGoals: data.learningGoals,
-        timeAvailable: data.timeAvailable,
-        careerDream: data.careerDream,
-        interests: data.interests,
-      },
-      update: {
-        educationLevel: data.educationLevel,
-        learningGoals: data.learningGoals,
-        timeAvailable: data.timeAvailable,
-        careerDream: data.careerDream,
-        interests: data.interests,
-      },
-    });
+    const sql = neon(process.env.DATABASE_URL!);
+    const now = new Date().toISOString();
+    const profileId = generateId();
 
-    await prisma.user.update({
-      where: { id: data.userId },
-      data: { onboardingDone: true },
-    });
+    await sql`
+      INSERT INTO "UserProfile" (id, "userId", "educationLevel", "learningGoals", "timeAvailable", "careerDream", interests, "createdAt", "updatedAt")
+      VALUES (${profileId}, ${data.userId}, ${data.educationLevel}, ${data.learningGoals}, ${data.timeAvailable}, ${data.careerDream}, ${data.interests}, ${now}::timestamp, ${now}::timestamp)
+      ON CONFLICT ("userId") DO UPDATE SET
+        "educationLevel" = EXCLUDED."educationLevel",
+        "learningGoals" = EXCLUDED."learningGoals",
+        "timeAvailable" = EXCLUDED."timeAvailable",
+        "careerDream" = EXCLUDED."careerDream",
+        interests = EXCLUDED.interests,
+        "updatedAt" = EXCLUDED."updatedAt"
+    `;
+
+    await sql`
+      UPDATE "User" SET "onboardingDone" = true, "updatedAt" = ${now}::timestamp
+      WHERE id = ${data.userId}
+    `;
 
     return { success: true };
   } catch (err) {
     console.error("[saveOnboarding] error:", err);
-    return { success: false, error: "Failed to save your profile. Please try again." };
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: `Failed to save your profile: ${msg.slice(0, 120)}` };
   }
 }
