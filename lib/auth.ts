@@ -10,13 +10,7 @@ if (process.env.NEXTAUTH_URL) {
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-
-// Use Neon's HTTP client for auth — avoids TCP cold-start timeouts in serverless
-function getNeonSql() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { neon } = require("@neondatabase/serverless");
-  return neon(process.env.DATABASE_URL!);
-}
+import { neon } from "@neondatabase/serverless";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -28,9 +22,11 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) return null;
 
         try {
-          const sql = getNeonSql();
+          const sql = neon(dbUrl);
           const rows = await sql`
             SELECT id, email, name, password, language, "onboardingDone", "isAdmin"
             FROM "User"
@@ -40,16 +36,16 @@ export const authOptions: NextAuthOptions = {
           const user = rows[0];
           if (!user || !user.password) return null;
 
-          const isValid = await bcrypt.compare(credentials.password, user.password);
+          const isValid = await bcrypt.compare(credentials.password, user.password as string);
           if (!isValid) return null;
 
           return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            language: user.language,
-            onboardingDone: user.onboardingDone,
-            isAdmin: user.isAdmin,
+            id: user.id as string,
+            email: user.email as string,
+            name: user.name as string,
+            language: user.language as string,
+            onboardingDone: user.onboardingDone as boolean,
+            isAdmin: user.isAdmin as boolean,
           };
         } catch (err) {
           console.error("[authorize] error:", err);

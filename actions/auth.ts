@@ -1,6 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { neon } from "@neondatabase/serverless";
 import { prisma } from "@/lib/prisma";
 import { LANGUAGES } from "@/lib/utils";
 
@@ -17,13 +18,6 @@ interface RegisterResult {
   error?: string;
 }
 
-// Use Neon HTTP client for registration — bypasses TCP cold-start entirely
-function getNeonSql() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { neon } = require("@neondatabase/serverless");
-  return neon(process.env.DATABASE_URL!);
-}
-
 function generateId(): string {
   return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
 }
@@ -35,7 +29,7 @@ export async function registerUser(data: RegisterData): Promise<RegisterResult> 
   }
 
   try {
-    const sql = getNeonSql();
+    const sql = neon(process.env.DATABASE_URL!);
     const email = data.email.toLowerCase().trim();
 
     // HTTP query — no TCP connection, no cold-start timeout
