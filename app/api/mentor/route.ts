@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       );
     }
-    return NextResponse.json({ error: "AI temporarily unavailable. Please try again." }, { status: 500 });
+    return NextResponse.json({ error: `AI error: ${message.slice(0, 200)}` }, { status: 500 });
   }
 }
 
