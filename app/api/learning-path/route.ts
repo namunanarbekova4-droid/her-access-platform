@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateLearningPath } from "@/lib/gemini";
-import { prisma } from "@/lib/prisma";
+import { neon } from "@neondatabase/serverless";
 import { parseJsonSafe } from "@/lib/utils";
 import type { LearningPath } from "@/types";
 
@@ -13,16 +13,22 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const profile = await prisma.userProfile.findUnique({
-      where: { userId: session.user.id },
-    });
+    const sql = neon(process.env.DATABASE_URL!);
+    const userId = session.user.id;
 
-    if (!profile) {
+    const profileRows = await sql`
+      SELECT "learningGoals", "educationLevel", "timeAvailable", interests, "learningPath"
+      FROM "UserProfile" WHERE "userId" = ${userId} LIMIT 1
+    `.catch(() => []);
+
+    if (!profileRows.length) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
+    const profile = profileRows[0];
+
     if (profile.learningPath) {
-      const path = parseJsonSafe<LearningPath>(profile.learningPath, {
+      const path = parseJsonSafe<LearningPath>(profile.learningPath as string, {
         title: "",
         description: "",
         totalWeeks: 0,
@@ -32,14 +38,17 @@ export async function GET() {
       return NextResponse.json({ path });
     }
 
-    const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+    const userRows = await sql`
+      SELECT language FROM "User" WHERE id = ${userId} LIMIT 1
+    `.catch(() => []);
+    const language = (userRows[0]?.language as string) ?? "en";
 
     const rawPath = await generateLearningPath({
-      goals: profile.learningGoals ?? "general education",
-      educationLevel: profile.educationLevel ?? "secondary",
-      timeAvailable: profile.timeAvailable ?? "1hour",
-      interests: profile.interests ?? "various topics",
-      language: user?.language ?? "en",
+      goals: (profile.learningGoals as string) ?? "general education",
+      educationLevel: (profile.educationLevel as string) ?? "secondary",
+      timeAvailable: (profile.timeAvailable as string) ?? "1hour",
+      interests: (profile.interests as string) ?? "various topics",
+      language,
     });
 
     const path = parseJsonSafe<LearningPath>(rawPath, {
@@ -50,21 +59,20 @@ export async function GET() {
       weeklySchedule: {},
     });
 
-    await prisma.userProfile.update({
-      where: { userId: session.user.id },
-      data: { learningPath: JSON.stringify(path) },
-    });
+    const now = new Date().toISOString();
+    await sql`
+      UPDATE "UserProfile"
+      SET "learningPath" = ${JSON.stringify(path)}, "updatedAt" = ${now}::timestamp
+      WHERE "userId" = ${userId}
+    `.catch(() => {});
 
     return NextResponse.json({ path });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message.includes("GEMINI_API_KEY")) {
-      return NextResponse.json(
-        { error: "AI service not configured." },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: "AI service not configured." }, { status: 503 });
     }
-    return NextResponse.json({ error: "Failed to generate learning path" }, { status: 500 });
+    return NextResponse.json({ error: `Failed to generate learning path: ${message.slice(0, 100)}` }, { status: 500 });
   }
 }
 
@@ -75,10 +83,13 @@ export async function DELETE() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await prisma.userProfile.update({
-      where: { userId: session.user.id },
-      data: { learningPath: null },
-    });
+    const sql = neon(process.env.DATABASE_URL!);
+    const now = new Date().toISOString();
+    await sql`
+      UPDATE "UserProfile"
+      SET "learningPath" = NULL, "updatedAt" = ${now}::timestamp
+      WHERE "userId" = ${session.user.id}
+    `;
 
     return NextResponse.json({ success: true });
   } catch {
