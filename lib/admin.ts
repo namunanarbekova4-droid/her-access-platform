@@ -1,20 +1,21 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { neon } from "@neondatabase/serverless";
 
 export async function requireAdmin() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return null;
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { isAdmin: true, email: true },
-  });
+  const sql = neon(process.env.DATABASE_URL!);
+  const rows = await sql`
+    SELECT "isAdmin", email FROM "User" WHERE id = ${session.user.id} LIMIT 1
+  `.catch(() => []);
 
+  const user = rows[0] ?? null;
   const adminEmail = process.env.ADMIN_EMAIL;
   const isAllowed =
     user?.isAdmin ||
-    (adminEmail && user?.email?.toLowerCase() === adminEmail.toLowerCase());
+    (adminEmail && (user?.email as string)?.toLowerCase() === adminEmail.toLowerCase());
 
   return isAllowed ? session : null;
 }

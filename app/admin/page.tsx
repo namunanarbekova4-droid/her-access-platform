@@ -1,19 +1,26 @@
-import { prisma } from "@/lib/prisma";
+import { neon } from "@neondatabase/serverless";
 import { AdminOverview } from "@/components/admin/AdminOverview";
 
 export const metadata = { title: "Admin — Her Access" };
 
 export default async function AdminPage() {
-  const [userCount, videoCount, libraryCount, messageCount] = await Promise.all([
-    prisma.user.count(),
-    prisma.videoLesson.count(),
-    prisma.libraryItem.count(),
-    prisma.message.count(),
+  const sql = neon(process.env.DATABASE_URL!);
+
+  const [userRows, videoRows, libraryRows, messageRows] = await Promise.all([
+    sql`SELECT COUNT(*)::int AS count FROM "User"`.catch(() => [{ count: 0 }]),
+    sql`SELECT COUNT(*)::int AS count FROM "VideoLesson"`.catch(() => [{ count: 0 }]),
+    sql`SELECT COUNT(*)::int AS count FROM "LibraryItem"`.catch(() => [{ count: 0 }]),
+    sql`SELECT COUNT(*)::int AS count FROM "Message"`.catch(() => [{ count: 0 }]),
   ]);
 
   return (
     <AdminOverview
-      stats={{ userCount, videoCount, libraryCount, messageCount }}
+      stats={{
+        userCount: (userRows[0]?.count as number) ?? 0,
+        videoCount: (videoRows[0]?.count as number) ?? 0,
+        libraryCount: (libraryRows[0]?.count as number) ?? 0,
+        messageCount: (messageRows[0]?.count as number) ?? 0,
+      }}
     />
   );
 }

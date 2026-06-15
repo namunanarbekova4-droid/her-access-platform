@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { neon } from "@neondatabase/serverless";
 import { AdminNav } from "@/components/admin/AdminNav";
 
 export default async function AdminLayout({
@@ -14,16 +14,16 @@ export default async function AdminLayout({
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { isAdmin: true, email: true },
-  });
+  const sql = neon(process.env.DATABASE_URL!);
+  const rows = await sql`
+    SELECT "isAdmin", email FROM "User" WHERE id = ${session.user.id} LIMIT 1
+  `.catch(() => []);
 
-  // Allow if isAdmin OR email matches ADMIN_EMAIL env var
+  const user = rows[0] ?? null;
   const adminEmail = process.env.ADMIN_EMAIL;
   const isAllowed =
     user?.isAdmin ||
-    (adminEmail && user?.email?.toLowerCase() === adminEmail.toLowerCase());
+    (adminEmail && (user?.email as string)?.toLowerCase() === adminEmail.toLowerCase());
 
   if (!isAllowed) redirect("/dashboard");
 
