@@ -44,8 +44,16 @@ export async function registerUser(data: RegisterData): Promise<RegisterResult> 
     const now = new Date().toISOString();
 
     await sql`
-      INSERT INTO "User" (id, name, email, password, language, "createdAt", "updatedAt")
-      VALUES (${id}, ${name}, ${email}, ${hashedPassword}, ${data.language}, ${now}, ${now})
+      INSERT INTO "User" (
+        id, name, nickname, email, "emailVerified", image,
+        password, language, "onboardingDone", "isAdmin",
+        "createdAt", "updatedAt"
+      )
+      VALUES (
+        ${id}, ${name}, NULL, ${email}, NULL, NULL,
+        ${hashedPassword}, ${data.language}, false, false,
+        ${now}::timestamp, ${now}::timestamp
+      )
     `;
 
     return { success: true };
