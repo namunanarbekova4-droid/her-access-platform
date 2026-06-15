@@ -28,7 +28,7 @@ export const authOptions: NextAuthOptions = {
         try {
           const sql = neon(dbUrl);
           const rows = await sql`
-            SELECT id, email, name, password, language, "onboardingDone", "isAdmin"
+            SELECT id, email, name, password, language
             FROM "User"
             WHERE email = ${credentials.email.toLowerCase()}
             LIMIT 1
@@ -43,9 +43,9 @@ export const authOptions: NextAuthOptions = {
             id: user.id as string,
             email: user.email as string,
             name: user.name as string,
-            language: user.language as string,
-            onboardingDone: user.onboardingDone as boolean,
-            isAdmin: user.isAdmin as boolean,
+            language: (user.language as string) ?? "en",
+            onboardingDone: false,
+            isAdmin: false,
           };
         } catch (err) {
           console.error("[authorize] error:", err);

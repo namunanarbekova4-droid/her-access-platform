@@ -41,11 +41,10 @@ export async function registerUser(data: RegisterData): Promise<RegisterResult> 
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const id = generateId();
     const name = data.name.trim();
-    const now = new Date().toISOString();
 
     await sql`
-      INSERT INTO "User" (id, name, email, password, language, "onboardingDone", "isAdmin", "createdAt", "updatedAt", "emailVerified", image)
-      VALUES (${id}, ${name}, ${email}, ${hashedPassword}, ${data.language}, false, false, ${now}, ${now}, NULL, NULL)
+      INSERT INTO "User" (id, name, email, password, language)
+      VALUES (${id}, ${name}, ${email}, ${hashedPassword}, ${data.language})
     `;
 
     return { success: true };
