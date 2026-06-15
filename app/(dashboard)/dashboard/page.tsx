@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { neon } from "@neondatabase/serverless";
 import { getGreeting } from "@/lib/utils";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
 
@@ -39,29 +39,31 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return null;
 
-  const [user, profile, messageDates] = await Promise.all([
-    prisma.user.findUnique({ where: { id: session.user.id }, select: { nickname: true, name: true } }),
-    prisma.userProfile.findUnique({ where: { userId: session.user.id }, select: { learningGoals: true } }),
-    prisma.message.findMany({
-      where: { userId: session.user.id, role: "user" },
-      select: { createdAt: true },
-      orderBy: { createdAt: "desc" },
-      take: 365,
-    }),
+  const sql = neon(process.env.DATABASE_URL!);
+  const userId = session.user.id;
+
+  const [userRows, profileRows, messageRows] = await Promise.all([
+    sql`SELECT nickname, name FROM "User" WHERE id = ${userId} LIMIT 1`.catch(() => []),
+    sql`SELECT "learningGoals" FROM "UserProfile" WHERE "userId" = ${userId} LIMIT 1`.catch(() => []),
+    sql`SELECT "createdAt" FROM "Message" WHERE "userId" = ${userId} AND role = 'user' ORDER BY "createdAt" DESC LIMIT 365`.catch(() => []),
   ]);
 
+  const user = userRows[0] ?? null;
+  const profile = profileRows[0] ?? null;
+  const messageDates = (messageRows as { createdAt: string }[]).map((m) => new Date(m.createdAt));
+
   const messageCount = messageDates.length;
-  const streak = computeStreak(messageDates.map((m) => m.createdAt));
+  const streak = computeStreak(messageDates);
   const latestMilestone = [...MILESTONES].reverse().find((m) => messageCount >= m) ?? null;
 
-  const displayName = user?.nickname ?? user?.name;
+  const displayName = (user?.nickname as string | null) ?? (user?.name as string | null);
   const greeting = getGreeting(displayName ?? undefined);
 
   return (
     <DashboardContent
       greeting={greeting}
       hasProfile={!!profile}
-      goals={profile?.learningGoals ?? null}
+      goals={(profile?.learningGoals as string | null) ?? null}
       name={displayName ?? null}
       messageCount={messageCount}
       streak={streak}
