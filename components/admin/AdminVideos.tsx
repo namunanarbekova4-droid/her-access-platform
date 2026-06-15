@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Pencil, Trash2, X, Check, Video, ExternalLink, Upload, Link } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { upload } from "@vercel/blob/client";
+import { Plus, Pencil, Trash2, X, Check, Video, ExternalLink, Upload, Link, FolderOpen } from "lucide-react";
 
 interface Course {
   id: string;
@@ -61,7 +62,10 @@ export function AdminVideos() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const [urlMode, setUrlMode] = useState<"link" | "drive">("link");
+  const [urlMode, setUrlMode] = useState<"link" | "drive" | "upload">("link");
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchVideos = useCallback(async () => {
     const [vRes, cRes] = await Promise.all([
@@ -103,6 +107,26 @@ export function AdminVideos() {
     setError("");
     setUrlMode("link");
     setShowForm(true);
+  }
+
+  async function handleFileUpload(file: File) {
+    if (!file) return;
+    setUploading(true);
+    setUploadProgress(0);
+    setError("");
+    try {
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/admin/upload",
+        onUploadProgress: ({ percentage }) => setUploadProgress(Math.round(percentage)),
+      });
+      setForm((f) => ({ ...f, videoUrl: blob.url }));
+      setUploadProgress(100);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   function convertDriveLink(url: string): string {
@@ -200,39 +224,42 @@ export function AdminVideos() {
               {/* Video source toggle */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">Video Source *</label>
-                <div className="flex gap-2 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setUrlMode("link")}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                      urlMode === "link"
-                        ? "bg-brand-purple text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
+                <div className="flex gap-2 mb-3 flex-wrap">
+                  <button type="button" onClick={() => setUrlMode("link")}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${urlMode === "link" ? "bg-brand-purple text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
                     <Link size={14} /> YouTube / URL
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setUrlMode("drive")}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                      urlMode === "drive"
-                        ? "bg-brand-purple text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
+                  <button type="button" onClick={() => setUrlMode("drive")}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${urlMode === "drive" ? "bg-brand-purple text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
                     <Upload size={14} /> Google Drive
+                  </button>
+                  <button type="button" onClick={() => { setUrlMode("upload"); fileInputRef.current?.click(); }}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${urlMode === "upload" ? "bg-brand-purple text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+                    <FolderOpen size={14} /> From Device
                   </button>
                 </div>
 
-                {urlMode === "link" ? (
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                />
+
+                {urlMode === "link" && (
                   <input
                     value={form.videoUrl}
                     onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
                     placeholder="https://youtube.com/watch?v=..."
                   />
-                ) : (
+                )}
+
+                {urlMode === "drive" && (
                   <div className="space-y-2">
                     <input
                       value={form.videoUrl}
@@ -246,8 +273,32 @@ export function AdminVideos() {
                       <p>2. Right-click → &ldquo;Share&rdquo; → &ldquo;Anyone with the link&rdquo;</p>
                       <p>3. Copy link and paste above</p>
                     </div>
-                    {form.videoUrl && (
-                      <p className="text-xs text-green-600">✓ Link ready</p>
+                    {form.videoUrl && <p className="text-xs text-green-600">✓ Link ready</p>}
+                  </div>
+                )}
+
+                {urlMode === "upload" && (
+                  <div className="space-y-2">
+                    {uploading ? (
+                      <div className="space-y-1">
+                        <div className="w-full bg-gray-100 rounded-full h-2">
+                          <div className="bg-brand-purple h-2 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+                        </div>
+                        <p className="text-xs text-gray-500">Uploading… {uploadProgress}%</p>
+                      </div>
+                    ) : form.videoUrl && form.videoUrl.includes("blob.vercel") ? (
+                      <div className="flex items-center gap-2 bg-green-50 rounded-xl px-3 py-2">
+                        <Check size={14} className="text-green-600" />
+                        <p className="text-xs text-green-700 truncate flex-1">Video uploaded successfully</p>
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs text-gray-500 hover:text-gray-700 underline">Change</button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => fileInputRef.current?.click()}
+                        className="w-full border-2 border-dashed border-gray-200 rounded-xl py-6 flex flex-col items-center gap-2 text-gray-400 hover:border-brand-purple hover:text-brand-purple transition-colors">
+                        <FolderOpen size={24} />
+                        <span className="text-sm">Tap to select video from your device</span>
+                        <span className="text-xs">MP4, MOV, WebM — up to 500MB</span>
+                      </button>
                     )}
                   </div>
                 )}
