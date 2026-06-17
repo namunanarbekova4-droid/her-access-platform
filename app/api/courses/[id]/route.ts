@@ -16,7 +16,7 @@ export async function GET(
 
   const sql = neon(process.env.DATABASE_URL!);
 
-  const [courseRows, materialRows, lessonRows] = await Promise.all([
+  const [courseRows, materialRows, videoRows] = await Promise.all([
     sql`SELECT * FROM "Course" WHERE id = ${params.id} LIMIT 1`.catch(() => []),
     sql`
       SELECT * FROM "LibraryItem"
@@ -34,10 +34,27 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  const dbRow = courseRows[0];
+
+  let aiLessons: unknown[] | null = null;
+  try {
+    if (dbRow.lessons) {
+      aiLessons = JSON.parse(dbRow.lessons as string) as unknown[];
+    }
+  } catch { aiLessons = null; }
+
   const course = {
-    ...courseRows[0],
+    id: dbRow.id,
+    title: dbRow.title,
+    description: dbRow.description,
+    category: dbRow.category,
+    totalWeeks: dbRow.totalWeeks,
+    difficulty: dbRow.difficulty,
+    imageEmoji: dbRow.imageEmoji,
+    language: dbRow.language ?? "en",
+    aiLessons,
     materials: materialRows,
-    lessons: lessonRows,
+    videoLessons: videoRows,
   };
 
   return NextResponse.json({ course });

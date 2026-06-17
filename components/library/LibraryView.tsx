@@ -3,11 +3,38 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Search, BookOpen, PlayCircle, Clock, ChevronRight, X, Play, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Search, BookOpen, PlayCircle, ChevronRight, X, Play, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const CATEGORIES = ["All", "Language & Literacy", "Digital Skills", "Financial Literacy", "Health & Rights", "Career Skills"];
+
+const CATEGORY_GRADIENT: Record<string, string> = {
+  "Language & Literacy": "from-blue-50 to-indigo-50",
+  "Digital Skills": "from-cyan-50 to-sky-50",
+  "Financial Literacy": "from-emerald-50 to-teal-50",
+  "Health & Rights": "from-rose-50 to-pink-50",
+  "Career Skills": "from-amber-50 to-yellow-50",
+  English: "from-blue-50 to-indigo-50",
+  Science: "from-green-50 to-emerald-50",
+  Math: "from-orange-50 to-amber-50",
+  Coding: "from-violet-50 to-purple-50",
+  Leadership: "from-pink-50 to-rose-50",
+};
+
+const CATEGORY_ACCENT: Record<string, string> = {
+  "Language & Literacy": "text-blue-600",
+  "Digital Skills": "text-cyan-600",
+  "Financial Literacy": "text-emerald-600",
+  "Health & Rights": "text-rose-500",
+  "Career Skills": "text-amber-600",
+  English: "text-blue-600",
+  Science: "text-green-600",
+  Math: "text-orange-600",
+  Coding: "text-violet-600",
+  Leadership: "text-pink-600",
+};
 
 interface Course {
   id: string;
@@ -18,7 +45,7 @@ interface Course {
   difficulty: string;
   imageEmoji: string;
   createdAt?: string;
-  _count: { materials: number; lessons: number };
+  _count: { lessons: number; materials: number; videos: number };
 }
 
 interface VideoLesson {
@@ -32,45 +59,6 @@ interface VideoLesson {
   language: string;
   sortOrder: number;
   courseId: string | null;
-}
-
-const CATEGORY_GRADIENT: Record<string, string> = {
-  English: "from-blue-50 to-indigo-50",
-  Science: "from-green-50 to-emerald-50",
-  Math: "from-orange-50 to-amber-50",
-  Coding: "from-violet-50 to-purple-50",
-  Leadership: "from-pink-50 to-rose-50",
-  "Digital Skills": "from-cyan-50 to-sky-50",
-  "Financial Literacy": "from-emerald-50 to-teal-50",
-  "Health & Rights": "from-red-50 to-rose-50",
-  "Career Skills": "from-yellow-50 to-amber-50",
-  Other: "from-gray-50 to-slate-50",
-};
-
-const CATEGORY_ACCENT: Record<string, string> = {
-  English: "text-blue-600",
-  Science: "text-green-600",
-  Math: "text-orange-600",
-  Coding: "text-violet-600",
-  Leadership: "text-pink-600",
-  "Digital Skills": "text-cyan-600",
-  "Financial Literacy": "text-emerald-600",
-  "Health & Rights": "text-red-500",
-  "Career Skills": "text-yellow-600",
-  Other: "text-gray-600",
-};
-
-const DIFFICULTY_VARIANT: Record<string, "success" | "warning" | "error" | "default"> = {
-  Beginner: "success",
-  Intermediate: "warning",
-  Advanced: "error",
-};
-
-const DIFFICULTIES = ["All", "Beginner", "Intermediate", "Advanced"];
-
-function isNew(createdAt?: string): boolean {
-  if (!createdAt) return false;
-  return Date.now() - new Date(createdAt).getTime() < 7 * 24 * 60 * 60 * 1000;
 }
 
 function embedUrl(url: string): string {
@@ -134,7 +122,7 @@ function VideoCard({ video, onClick }: { video: VideoLesson; onClick: () => void
 function CourseCard({ course }: { course: Course }) {
   const gradient = CATEGORY_GRADIENT[course.category] ?? "from-gray-50 to-gray-100";
   const accent = CATEGORY_ACCENT[course.category] ?? "text-gray-600";
-  const newCourse = isNew(course.createdAt);
+  const lessonCount = course._count.lessons || course._count.materials || 0;
 
   return (
     <Link href={`/library/${course.id}`}>
@@ -145,14 +133,9 @@ function CourseCard({ course }: { course: Course }) {
             <div className="w-12 h-12 rounded-2xl bg-white/80 flex items-center justify-center text-2xl shadow-sm flex-shrink-0">
               {course.imageEmoji}
             </div>
-            <div className="flex gap-1.5 flex-wrap justify-end">
-              {newCourse && (
-                <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                  <Sparkles size={10} /> New
-                </span>
-              )}
-              <Badge variant={DIFFICULTY_VARIANT[course.difficulty] ?? "default"}>{course.difficulty}</Badge>
-            </div>
+            <span className={cn("text-xs font-medium px-2.5 py-0.5 rounded-full bg-white/70 border border-white/50", accent)}>
+              {course.category}
+            </span>
           </div>
           <h3 className="text-base font-semibold text-foreground mt-3 leading-snug group-hover:text-brand-purple transition-colors">
             {course.title}
@@ -162,16 +145,9 @@ function CourseCard({ course }: { course: Course }) {
         <div className="px-5 py-4 flex-1 flex flex-col">
           <p className="text-xs text-muted leading-relaxed flex-1 mb-4 line-clamp-3">{course.description}</p>
           <div className="flex items-center justify-between pt-3 border-t border-border">
-            <div className="flex items-center gap-3">
-              <div className={cn("flex items-center gap-1 text-xs font-medium", accent)}>
-                <Clock size={11} />{course.totalWeeks}w
-              </div>
-              <div className="flex items-center gap-1 text-xs text-muted">
-                <PlayCircle size={11} />{course._count.lessons} videos
-              </div>
-              <div className="flex items-center gap-1 text-xs text-muted">
-                <BookOpen size={11} />{course._count.materials} reads
-              </div>
+            <div className={cn("flex items-center gap-1 text-xs font-medium", accent)}>
+              <BookOpen size={11} />
+              {lessonCount} {lessonCount === 1 ? "lesson" : "lessons"}
             </div>
             <ChevronRight size={16} className="text-muted group-hover:text-brand-purple group-hover:translate-x-0.5 transition-all" />
           </div>
@@ -187,7 +163,7 @@ function CourseCardSkeleton() {
       <div className="px-5 pt-5 pb-4 bg-gray-50">
         <div className="flex items-start justify-between gap-3">
           <Skeleton className="w-12 h-12 rounded-2xl" />
-          <Skeleton className="w-16 h-5 rounded-full" />
+          <Skeleton className="w-24 h-5 rounded-full" />
         </div>
         <Skeleton className="mt-3 h-4 w-3/4 rounded" />
       </div>
@@ -195,10 +171,9 @@ function CourseCardSkeleton() {
         <Skeleton className="h-3 w-full rounded mb-1.5" />
         <Skeleton className="h-3 w-5/6 rounded mb-1.5" />
         <Skeleton className="h-3 w-4/6 rounded mb-4" />
-        <div className="flex gap-3 pt-3 border-t border-border">
-          <Skeleton className="h-3 w-8 rounded" />
-          <Skeleton className="h-3 w-12 rounded" />
-          <Skeleton className="h-3 w-10 rounded" />
+        <div className="flex items-center justify-between pt-3 border-t border-border">
+          <Skeleton className="h-3 w-16 rounded" />
+          <Skeleton className="h-4 w-4 rounded" />
         </div>
       </div>
     </div>
@@ -212,7 +187,6 @@ export function LibraryView() {
   const [initializing, setInitializing] = useState(false);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [activeDifficulty, setActiveDifficulty] = useState("All");
   const [activeVideo, setActiveVideo] = useState<VideoLesson | null>(null);
 
   const loadData = useCallback(async () => {
@@ -231,7 +205,7 @@ export function LibraryView() {
 
       if (c.length === 0) {
         setInitializing(true);
-        fetch("/api/init-courses", { method: "POST" })
+        fetch("/api/courses/init-ai", { method: "POST" })
           .then((r) => r.json())
           .then((d: { seeded?: boolean }) => {
             if (d.seeded) return loadData();
@@ -247,21 +221,17 @@ export function LibraryView() {
     });
   }, [loadData]);
 
-  // Derive categories from loaded courses
-  const allCategories = ["All", ...Array.from(new Set(courses.map((c) => c.category))).sort()];
-
   const filteredCourses = courses.filter((c) => {
     const matchCat = activeCategory === "All" || c.category === activeCategory;
-    const matchDiff = activeDifficulty === "All" || c.difficulty === activeDifficulty;
     const q = query.toLowerCase();
     const matchQ = q === "" || c.title.toLowerCase().includes(q) || c.description.toLowerCase().includes(q) || c.category.toLowerCase().includes(q);
-    return matchCat && matchDiff && matchQ;
+    return matchCat && matchQ;
   });
 
   const standaloneVideos = videos.filter((v) => !v.courseId);
   const filteredVideos = standaloneVideos.filter((v) => {
     const q = query.toLowerCase();
-    return q === "" || v.title.toLowerCase().includes(q) || (v.description ?? "").toLowerCase().includes(q) || v.category.toLowerCase().includes(q);
+    return q === "" || v.title.toLowerCase().includes(q) || (v.description ?? "").toLowerCase().includes(q);
   });
 
   const hasContent = filteredCourses.length > 0 || filteredVideos.length > 0;
@@ -270,7 +240,7 @@ export function LibraryView() {
     <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-5xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-1">Quiet Library</h1>
-        <p className="text-muted text-sm">Structured courses with video lessons and reading materials — study anywhere, even offline.</p>
+        <p className="text-muted text-sm">Structured courses — study anywhere, even offline.</p>
       </motion.div>
 
       {/* Search */}
@@ -287,10 +257,10 @@ export function LibraryView() {
         </div>
       </motion.div>
 
-      {/* Category + Difficulty filters */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }} className="space-y-2 mb-8">
+      {/* Category filter */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }} className="mb-8">
         <div className="flex flex-wrap gap-2">
-          {allCategories.map((cat) => (
+          {CATEGORIES.map((cat) => (
             <button key={cat} onClick={() => setActiveCategory(cat)}
               className={cn(
                 "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border",
@@ -298,17 +268,6 @@ export function LibraryView() {
                   ? "bg-brand-purple text-white border-brand-purple shadow-soft"
                   : "bg-white text-muted border-border hover:border-brand-purple/50 hover:text-brand-purple"
               )}>{cat}</button>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          {DIFFICULTIES.map((d) => (
-            <button key={d} onClick={() => setActiveDifficulty(d)}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 border",
-                activeDifficulty === d
-                  ? "bg-gray-800 text-white border-gray-800"
-                  : "bg-white text-muted border-border hover:border-gray-400 hover:text-gray-700"
-              )}>{d}</button>
           ))}
         </div>
       </motion.div>
@@ -319,7 +278,7 @@ export function LibraryView() {
             {initializing && (
               <div className="flex items-center gap-3 bg-purple-50 border border-purple-100 rounded-2xl px-4 py-3 mb-6">
                 <Sparkles size={16} className="text-purple-600 animate-pulse" />
-                <p className="text-sm text-purple-700">Setting up your library for the first time…</p>
+                <p className="text-sm text-purple-700">Creating your personalised library… this takes about 10 seconds.</p>
               </div>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -331,13 +290,11 @@ export function LibraryView() {
             <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
               <Search size={36} className="mx-auto text-gray-300 mb-3" />
               <p className="text-gray-500 font-medium">
-                {query || activeCategory !== "All" || activeDifficulty !== "All"
-                  ? "No courses match your filters"
-                  : "No courses yet"}
+                {query || activeCategory !== "All" ? "No courses match your filters" : "No courses yet"}
               </p>
-              {(query || activeCategory !== "All" || activeDifficulty !== "All") && (
+              {(query || activeCategory !== "All") && (
                 <Button variant="outline" size="sm" className="mt-4"
-                  onClick={() => { setQuery(""); setActiveCategory("All"); setActiveDifficulty("All"); }}>
+                  onClick={() => { setQuery(""); setActiveCategory("All"); }}>
                   Clear filters
                 </Button>
               )}

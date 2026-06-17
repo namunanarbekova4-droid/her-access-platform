@@ -269,6 +269,129 @@ Length: 500-700 words. Write in clear, simple English. Return ONLY the markdown 
   return result.response.text();
 }
 
+export async function generateCourseStubs(language: string = "en"): Promise<Array<{
+  category: string;
+  title: string;
+  description: string;
+  imageEmoji: string;
+  lessonTitles: string[];
+}>> {
+  const client = getGeminiClient();
+  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+  const langName = language === "ru" ? "Russian" : language === "kk" ? "Kazakh" : "English";
+
+  const prompt = `You are an expert educator creating a curriculum for girls aged 15-30 in developing countries (Central Asia, Middle East, Africa) who face educational restrictions.
+
+Generate EXACTLY 15 courses — 3 per category for these 5 categories:
+1. Language & Literacy
+2. Digital Skills
+3. Financial Literacy
+4. Health & Rights
+5. Career Skills
+
+Rules:
+- Write all text in ${langName}
+- Titles must be specific and practical (NOT generic like "Introduction to X")
+- Descriptions explain immediate, real-life benefit (2 sentences)
+- Each course must have exactly 3 distinct lesson titles that build on each other
+
+Return ONLY a JSON array of exactly 15 objects:
+[
+  {
+    "category": "Language & Literacy",
+    "title": "...",
+    "description": "Sentence 1. Sentence 2.",
+    "imageEmoji": "one emoji",
+    "lessonTitles": ["Lesson title 1", "Lesson title 2", "Lesson title 3"]
+  }
+]
+
+Return ONLY valid JSON. No markdown. No extra text.`;
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().trim()
+        .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+      return JSON.parse(text);
+    } catch (err) {
+      lastError = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("503") && !msg.includes("overloaded") && !msg.includes("high demand")) throw err;
+      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
+export async function generateCourseLessonsContent(
+  courseTitle: string,
+  category: string,
+  lessonTitles: string[],
+  language: string = "en"
+): Promise<Array<{
+  id: string;
+  title: string;
+  content: string;
+  examples: string[];
+  key_takeaways: string[];
+  assignment: string;
+  quiz: Array<{ question: string; options: string[]; correct_answer: string }>;
+  downloadable_summary: string;
+}>> {
+  const client = getGeminiClient();
+  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+  const langName = language === "ru" ? "Russian" : language === "kk" ? "Kazakh" : "English";
+
+  const prompt = `You are an expert educator writing lesson content for girls aged 15-30 in developing countries. Write entirely in ${langName}.
+
+Course: "${courseTitle}"
+Category: ${category}
+
+Generate EXACTLY ${lessonTitles.length} lessons for these titles:
+${lessonTitles.map((t, i) => `${i + 1}. ${t}`).join("\n")}
+
+Return ONLY a JSON array:
+[
+  {
+    "id": "1",
+    "title": "exact lesson title",
+    "content": "280-320 words of clear, practical content. Use short paragraphs. Include real-world examples from Central Asia, Middle East, or Africa. End with 2 practical exercises.",
+    "examples": ["Concrete example 1 with real-world context", "Concrete example 2 with real-world context"],
+    "key_takeaways": ["Takeaway 1", "Takeaway 2", "Takeaway 3", "Takeaway 4"],
+    "assignment": "One practical task the student can do TODAY with no equipment or internet needed.",
+    "quiz": [
+      {"question": "Clear question testing real understanding", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "correct_answer": "A"},
+      {"question": "Second question", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "correct_answer": "B"},
+      {"question": "Third question", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "correct_answer": "C"}
+    ],
+    "downloadable_summary": "3-4 bullet points summarising key points. Can be printed or hand-written."
+  }
+]
+
+Write all text in ${langName}. Content must be immediately useful. No jargon.
+Return ONLY the JSON array.`;
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().trim()
+        .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+      return JSON.parse(text);
+    } catch (err) {
+      lastError = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("503") && !msg.includes("overloaded") && !msg.includes("high demand")) throw err;
+      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 export async function generateMultipleStories(
   count: number = 3
 ): Promise<string> {
