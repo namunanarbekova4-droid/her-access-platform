@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Search, BookOpen, PlayCircle, Clock, ChevronRight } from "lucide-react";
+import { Search, BookOpen, PlayCircle, Clock, ChevronRight, X, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Course {
@@ -19,6 +19,19 @@ interface Course {
   difficulty: string;
   imageEmoji: string;
   _count: { materials: number; lessons: number };
+}
+
+interface VideoLesson {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  videoUrl: string;
+  thumbnailUrl: string | null;
+  duration: string | null;
+  language: string;
+  sortOrder: number;
+  courseId: string | null;
 }
 
 type Category = "All" | "English" | "Science" | "Math" | "Coding" | "Leadership";
@@ -55,6 +68,95 @@ const DIFFICULTY_VARIANT: Record<string, "success" | "warning" | "error" | "defa
   Advanced: "error",
 };
 
+function embedUrl(url: string): string {
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
+  // Google Drive (already converted to /preview by admin)
+  if (url.includes("drive.google.com")) return url.replace("/view", "/preview");
+  return url;
+}
+
+function VideoModal({ video, onClose }: { video: VideoLesson; onClose: () => void }) {
+  const src = embedUrl(video.videoUrl);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div>
+            <h3 className="font-semibold text-gray-900 text-sm leading-tight">{video.title}</h3>
+            {video.duration && <p className="text-xs text-gray-400 mt-0.5">{video.duration}</p>}
+          </div>
+          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="aspect-video bg-black">
+          <iframe
+            src={src}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+        {video.description && (
+          <div className="px-4 py-3 text-sm text-gray-600 border-t border-gray-100">{video.description}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function VideoCard({ video, onClick }: { video: VideoLesson; onClick: () => void }) {
+  return (
+    <motion.button
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
+      onClick={onClick}
+      className="bg-white rounded-2xl border border-border shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col overflow-hidden group text-left w-full"
+    >
+      {/* Thumbnail / placeholder */}
+      <div className="relative aspect-video bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center overflow-hidden">
+        {video.thumbnailUrl ? (
+          <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
+        ) : (
+          <PlayCircle size={36} className="text-brand-purple/40" />
+        )}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+          <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+            <Play size={20} className="text-brand-purple ml-0.5" fill="currentColor" />
+          </div>
+        </div>
+        {video.duration && (
+          <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
+            {video.duration}
+          </span>
+        )}
+      </div>
+
+      <div className="p-3">
+        <p className="text-sm font-semibold text-foreground leading-snug group-hover:text-brand-purple transition-colors line-clamp-2">
+          {video.title}
+        </p>
+        <p className="text-xs text-muted mt-1">{video.category}</p>
+      </div>
+    </motion.button>
+  );
+}
+
 function CourseCard({ course }: { course: Course }) {
   const gradient = CATEGORY_GRADIENT[course.category] ?? "from-gray-50 to-gray-100";
   const accent = CATEGORY_ACCENT[course.category] ?? "text-gray-600";
@@ -66,7 +168,6 @@ function CourseCard({ course }: { course: Course }) {
         transition={{ duration: 0.2 }}
         className="bg-white rounded-3xl border border-border shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col h-full overflow-hidden group"
       >
-        {/* Top colour band */}
         <div className={cn("px-5 pt-5 pb-4 bg-gradient-to-br", gradient)}>
           <div className="flex items-start justify-between gap-3">
             <div className="w-12 h-12 rounded-2xl bg-white/80 flex items-center justify-center text-2xl shadow-sm flex-shrink-0">
@@ -81,13 +182,11 @@ function CourseCard({ course }: { course: Course }) {
           </h3>
         </div>
 
-        {/* Body */}
         <div className="px-5 py-4 flex-1 flex flex-col">
           <p className="text-xs text-muted leading-relaxed flex-1 mb-4 line-clamp-3">
             {course.description}
           </p>
 
-          {/* Stats */}
           <div className="flex items-center justify-between pt-3 border-t border-border">
             <div className="flex items-center gap-3">
               <div className={cn("flex items-center gap-1 text-xs font-medium", accent)}>
@@ -140,21 +239,24 @@ function CourseCardSkeleton() {
 
 export function LibraryView() {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [videos, setVideos] = useState<VideoLesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<Category>("All");
+  const [activeVideo, setActiveVideo] = useState<VideoLesson | null>(null);
 
   useEffect(() => {
-    fetch("/api/courses")
-      .then((r) => r.json())
-      .then((d: { courses?: Course[] }) => {
-        setCourses(d.courses ?? []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    Promise.all([
+      fetch("/api/courses").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/videos").then((r) => r.json()).catch(() => ({})),
+    ]).then(([courseData, videoData]: [{ courses?: Course[] }, { videos?: VideoLesson[] }]) => {
+      setCourses(courseData.courses ?? []);
+      setVideos(videoData.videos ?? []);
+      setLoading(false);
+    });
   }, []);
 
-  const filtered = courses.filter((c) => {
+  const filteredCourses = courses.filter((c) => {
     const matchesCategory = activeCategory === "All" || c.category === activeCategory;
     const q = query.toLowerCase();
     const matchesQuery =
@@ -164,6 +266,20 @@ export function LibraryView() {
       c.category.toLowerCase().includes(q);
     return matchesCategory && matchesQuery;
   });
+
+  // Standalone videos (not linked to any course)
+  const standaloneVideos = videos.filter((v) => !v.courseId);
+  const filteredVideos = standaloneVideos.filter((v) => {
+    const q = query.toLowerCase();
+    return (
+      q === "" ||
+      v.title.toLowerCase().includes(q) ||
+      (v.description ?? "").toLowerCase().includes(q) ||
+      v.category.toLowerCase().includes(q)
+    );
+  });
+
+  const hasContent = filteredCourses.length > 0 || filteredVideos.length > 0;
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-5xl mx-auto">
@@ -198,7 +314,7 @@ export function LibraryView() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search courses…"
+            placeholder="Search courses and videos…"
             className="w-full pl-10 pr-4 py-3 rounded-2xl border border-border bg-white text-foreground placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30 focus:border-brand-purple transition-all"
           />
         </div>
@@ -230,7 +346,6 @@ export function LibraryView() {
         ))}
       </motion.div>
 
-      {/* Course grid */}
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.div
@@ -244,7 +359,7 @@ export function LibraryView() {
               <CourseCardSkeleton key={i} />
             ))}
           </motion.div>
-        ) : filtered.length === 0 ? (
+        ) : !hasContent ? (
           <motion.div
             key="empty"
             initial={{ opacity: 0 }}
@@ -253,11 +368,11 @@ export function LibraryView() {
           >
             <EmptyState
               emoji="🔍"
-              title="No courses found"
+              title="No content found"
               description={
                 query
                   ? `No results for "${query}". Try a different search term.`
-                  : "No courses in this category yet."
+                  : "No courses or videos in this category yet."
               }
               action={
                 query || activeCategory !== "All" ? (
@@ -274,25 +389,62 @@ export function LibraryView() {
           </motion.div>
         ) : (
           <motion.div
-            key="grid"
+            key="content"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            className="space-y-10"
           >
-            {filtered.map((course, i) => (
-              <motion.div
-                key={course.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.05 }}
-              >
-                <CourseCard course={course} />
-              </motion.div>
-            ))}
+            {/* Courses section */}
+            {filteredCourses.length > 0 && (
+              <section>
+                {filteredVideos.length > 0 && (
+                  <h2 className="text-base font-semibold text-foreground mb-4">Courses</h2>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredCourses.map((course, i) => (
+                    <motion.div
+                      key={course.id}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: i * 0.05 }}
+                    >
+                      <CourseCard course={course} />
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Standalone video lessons section */}
+            {filteredVideos.length > 0 && (
+              <section>
+                <h2 className="text-base font-semibold text-foreground mb-4">
+                  Video Lessons
+                  <span className="ml-2 text-xs font-normal text-muted">{filteredVideos.length} videos</span>
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {filteredVideos.map((video, i) => (
+                    <motion.div
+                      key={video.id}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: i * 0.05 }}
+                    >
+                      <VideoCard video={video} onClick={() => setActiveVideo(video)} />
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Video player modal */}
+      {activeVideo && (
+        <VideoModal video={activeVideo} onClose={() => setActiveVideo(null)} />
+      )}
     </div>
   );
 }
