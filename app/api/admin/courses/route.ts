@@ -13,10 +13,29 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const sql = neon(process.env.DATABASE_URL!);
-  const courses = await sql`
-    SELECT id, title, "totalWeeks", category, difficulty, language, "isPublished", "sortOrder"
-    FROM "Course" ORDER BY "sortOrder" ASC, "createdAt" ASC
+  const rows = await sql`
+    SELECT
+      c.id, c.title, c.description, c.category, c."totalWeeks",
+      c.difficulty, c."imageEmoji", c.language, c."isPublished", c."sortOrder",
+      (SELECT COUNT(*) FROM "LibraryItem" li WHERE li."courseId" = c.id)::int AS materials_count,
+      (SELECT COUNT(*) FROM "VideoLesson" vl WHERE vl."courseId" = c.id AND vl."isPublished" = true)::int AS lessons_count
+    FROM "Course" c
+    ORDER BY c."sortOrder" ASC, c."createdAt" ASC
   `.catch(() => []);
+
+  const courses = rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    category: r.category,
+    totalWeeks: r.totalWeeks,
+    difficulty: r.difficulty,
+    imageEmoji: r.imageEmoji,
+    language: r.language,
+    isPublished: r.isPublished,
+    sortOrder: r.sortOrder,
+    _count: { materials: r.materials_count ?? 0, lessons: r.lessons_count ?? 0 },
+  }));
 
   return NextResponse.json({ courses });
 }

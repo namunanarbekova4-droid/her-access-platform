@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Pencil, Trash2, X, Check, BookOpen, Sparkles } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, BookOpen, Sparkles, Wand2, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface Course {
@@ -17,7 +17,10 @@ interface Course {
   _count: { materials: number; lessons: number };
 }
 
-const CATEGORIES = ["English", "Science", "Math", "Coding", "Leadership"];
+const CATEGORIES = [
+  "English", "Science", "Math", "Coding", "Leadership",
+  "Digital Skills", "Financial Literacy", "Health & Rights", "Career Skills", "Other",
+];
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
 
 const EMPTY_FORM = {
@@ -31,16 +34,26 @@ const EMPTY_FORM = {
   sortOrder: 0,
 };
 
+const AI_EMPTY = {
+  topic: "",
+  category: "Digital Skills",
+  difficulty: "Beginner",
+  weeks: 4,
+};
+
 export function AdminCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showAI, setShowAI] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [aiForm, setAiForm] = useState(AI_EMPTY);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [error, setError] = useState("");
   const [seeding, setSeeding] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchCourses = useCallback(async () => {
     const res = await fetch("/api/admin/courses");
@@ -91,6 +104,32 @@ export function AdminCourses() {
     }
   }
 
+  async function handleAIGenerate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!aiForm.topic.trim()) return;
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/admin/generate-course", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(aiForm),
+      });
+      const data = await res.json() as { message?: string; error?: string; title?: string };
+      if (!res.ok) throw new Error(data.error ?? "Generation failed");
+      toast.success(data.message ?? `Created "${data.title}"!`, {
+        style: { borderRadius: "16px", background: "#3B1347", color: "#fff" },
+        duration: 5000,
+      });
+      setShowAI(false);
+      setAiForm(AI_EMPTY);
+      await fetchCourses();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "AI generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -134,14 +173,20 @@ export function AdminCourses() {
           <h1 className="text-2xl font-bold text-gray-900">Courses</h1>
           <p className="text-sm text-gray-500 mt-0.5">{courses.length} courses total</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
+          <button
+            onClick={() => setShowAI(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all shadow-sm"
+          >
+            <Wand2 size={16} /> Generate with AI
+          </button>
           <button
             onClick={handleSeed}
             disabled={seeding}
             className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
           >
             <Sparkles size={16} />
-            {seeding ? "Seeding…" : "Seed All Courses"}
+            {seeding ? "Seeding…" : "Seed 11 Courses"}
           </button>
           <button
             onClick={openAdd}
@@ -152,14 +197,113 @@ export function AdminCourses() {
         </div>
       </div>
 
-      {/* Seed hint */}
       {courses.length === 0 && !loading && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 text-sm text-amber-800">
-          <strong>First time?</strong> Click &quot;Seed All Courses&quot; to automatically populate all 11 courses with weekly content and video lessons.
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-5 mb-6">
+          <p className="font-semibold text-purple-900 mb-1">Library is empty — add courses in 3 ways:</p>
+          <ol className="text-sm text-purple-700 space-y-1 list-decimal list-inside">
+            <li><strong>Seed 11 Courses</strong> — instantly populates with pre-written English, Math, Science, Coding & Leadership courses</li>
+            <li><strong>Generate with AI</strong> — type any topic and Gemini writes a full course with weekly lessons</li>
+            <li><strong>Add Course</strong> — create manually and add content yourself</li>
+          </ol>
         </div>
       )}
 
-      {/* Form modal */}
+      {/* AI Generate Modal */}
+      {showAI && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                  <Wand2 size={18} className="text-purple-600" /> Generate Course with AI
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">Gemini will write a full course with weekly lessons</p>
+              </div>
+              <button onClick={() => { setShowAI(false); setAiForm(AI_EMPTY); }} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAIGenerate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Topic / Course Idea *</label>
+                <input
+                  value={aiForm.topic}
+                  onChange={(e) => setAiForm({ ...aiForm, topic: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  placeholder="e.g. Microsoft Excel Basics, Canva for Beginners, Budgeting & Saving Money…"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                  <select
+                    value={aiForm.category}
+                    onChange={(e) => setAiForm({ ...aiForm, category: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  >
+                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Difficulty</label>
+                  <select
+                    value={aiForm.difficulty}
+                    onChange={(e) => setAiForm({ ...aiForm, difficulty: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  >
+                    {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Number of Weeks: {aiForm.weeks}</label>
+                <input
+                  type="range"
+                  min={2}
+                  max={8}
+                  value={aiForm.weeks}
+                  onChange={(e) => setAiForm({ ...aiForm, weeks: parseInt(e.target.value) })}
+                  className="w-full accent-purple-600"
+                />
+                <div className="flex justify-between text-xs text-gray-400 mt-0.5">
+                  <span>2 weeks</span><span>8 weeks</span>
+                </div>
+              </div>
+
+              <div className="bg-purple-50 rounded-xl p-3 text-xs text-purple-700">
+                Gemini will write all lesson content automatically. This takes ~30 seconds. You can edit any content afterwards.
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="submit"
+                  disabled={generating || !aiForm.topic.trim()}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl text-sm font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {generating ? (
+                    <><Loader2 size={16} className="animate-spin" /> Generating…</>
+                  ) : (
+                    <><Wand2 size={16} /> Generate Course</>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowAI(false); setAiForm(AI_EMPTY); }}
+                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Add/Edit Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 shadow-xl">
@@ -287,7 +431,7 @@ export function AdminCourses() {
         <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
           <BookOpen size={40} className="mx-auto text-gray-300 mb-3" />
           <p className="text-gray-500 font-medium">No courses yet</p>
-          <p className="text-sm text-gray-400 mt-1">Click &quot;Seed All Courses&quot; or &quot;Add Course&quot; to get started</p>
+          <p className="text-sm text-gray-400 mt-1">Use the buttons above to seed or create courses</p>
         </div>
       ) : (
         <div className="space-y-3">

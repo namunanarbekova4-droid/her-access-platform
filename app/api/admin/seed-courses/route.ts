@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
-import { prisma } from "@/lib/prisma";
+import { neon } from "@neondatabase/serverless";
 
 export const dynamic = "force-dynamic";
 
@@ -2884,64 +2884,79 @@ Isotopes have the same chemical properties but different masses.
   },
 ];
 
+function genId(prefix: string) {
+  return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
 export async function POST() {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const sql = neon(process.env.DATABASE_URL!);
   let created = 0;
   let skipped = 0;
 
   for (const courseData of COURSES) {
-    const existing = await prisma.course.findFirst({
-      where: { title: courseData.title },
-    });
+    const existing = await sql`
+      SELECT id FROM "Course" WHERE title = ${courseData.title} LIMIT 1
+    `.catch(() => []);
 
-    if (existing) {
+    if (existing.length > 0) {
       skipped++;
       continue;
     }
 
-    const course = await prisma.course.create({
-      data: {
-        title: courseData.title,
-        description: courseData.description,
-        category: courseData.category,
-        totalWeeks: courseData.totalWeeks,
-        difficulty: courseData.difficulty,
-        imageEmoji: courseData.imageEmoji,
-        sortOrder: courseData.sortOrder,
-        isPublished: true,
-      },
-    });
+    const courseId = genId("c");
+    const now = new Date().toISOString();
+
+    await sql`
+      INSERT INTO "Course" (id, title, description, category, "totalWeeks", difficulty, language, "imageEmoji", "isPublished", "sortOrder", "createdAt", "updatedAt")
+      VALUES (
+        ${courseId}, ${courseData.title}, ${courseData.description}, ${courseData.category},
+        ${courseData.totalWeeks}, ${courseData.difficulty}, 'en', ${courseData.imageEmoji},
+        true, ${courseData.sortOrder}, ${now}::timestamp, ${now}::timestamp
+      )
+    `;
 
     for (const week of courseData.weeks) {
-      await prisma.libraryItem.create({
-        data: {
-          title: `Week ${week.week}: ${week.title}`,
-          description: `Week ${week.week} reading material for ${courseData.title}`,
-          category: courseData.category,
-          content: week.content,
-          difficulty: courseData.difficulty,
-          duration: `Week ${week.week}`,
-          type: "reading",
-          weekNumber: week.week,
-          courseId: course.id,
-        },
-      });
+      const liId = genId("li");
+      await sql`
+        INSERT INTO "LibraryItem" (id, title, description, category, content, difficulty, duration, type, "weekNumber", "courseId", "createdAt", "updatedAt")
+        VALUES (
+          ${liId},
+          ${`Week ${week.week}: ${week.title}`},
+          ${`Week ${week.week} reading material for ${courseData.title}`},
+          ${courseData.category},
+          ${week.content},
+          ${courseData.difficulty},
+          ${`Week ${week.week}`},
+          'reading',
+          ${week.week},
+          ${courseId},
+          ${now}::timestamp,
+          ${now}::timestamp
+        )
+      `;
 
-      await prisma.videoLesson.create({
-        data: {
-          title: `Week ${week.week}: ${week.videoTitle}`,
-          description: `Video lesson for Week ${week.week} of ${courseData.title}`,
-          category: courseData.category,
-          videoUrl: week.videoUrl,
-          duration: week.videoDuration,
-          weekNumber: week.week,
-          courseId: course.id,
-          isPublished: true,
-          sortOrder: week.week,
-        },
-      });
+      const vlId = genId("vl");
+      await sql`
+        INSERT INTO "VideoLesson" (id, title, description, category, "videoUrl", duration, language, "isPublished", "sortOrder", "courseId", "weekNumber", "createdAt", "updatedAt")
+        VALUES (
+          ${vlId},
+          ${`Week ${week.week}: ${week.videoTitle}`},
+          ${`Video lesson for Week ${week.week} of ${courseData.title}`},
+          ${courseData.category},
+          ${week.videoUrl},
+          ${week.videoDuration},
+          'en',
+          true,
+          ${week.week},
+          ${courseId},
+          ${week.week},
+          ${now}::timestamp,
+          ${now}::timestamp
+        )
+      `;
     }
 
     created++;

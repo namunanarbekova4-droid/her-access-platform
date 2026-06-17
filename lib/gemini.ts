@@ -180,6 +180,95 @@ Make it realistic, emotionally moving, and empowering. No clichés. Return ONLY 
   return result.response.text();
 }
 
+export async function generateCourseWithAI(
+  topic: string,
+  options: { category?: string; difficulty?: string; language?: string; weeks?: number } = {}
+): Promise<{
+  title: string;
+  description: string;
+  category: string;
+  difficulty: string;
+  imageEmoji: string;
+  totalWeeks: number;
+  language: string;
+  weeks: Array<{ week: number; title: string; videoTitle: string; videoUrl: string; content: string }>;
+}> {
+  const client = getGeminiClient();
+  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const numWeeks = options.weeks ?? 4;
+  const category = options.category ?? "Digital Skills";
+  const difficulty = options.difficulty ?? "Beginner";
+  const lang = options.language ?? "en";
+
+  const prompt = `Create a complete educational course about "${topic}" for young women in developing regions who may have limited prior education.
+
+Return a JSON object with this EXACT structure (no markdown, no code blocks, just raw JSON):
+{
+  "title": "Concise inspiring course title",
+  "description": "2-3 sentence motivating course description",
+  "category": "${category}",
+  "difficulty": "${difficulty}",
+  "imageEmoji": "single relevant emoji",
+  "totalWeeks": ${numWeeks},
+  "language": "${lang}",
+  "weeks": [
+    {
+      "week": 1,
+      "title": "Week topic title",
+      "videoTitle": "Title for the video lesson",
+      "videoUrl": "",
+      "content": "Full markdown lesson (400-600 words) with ## headings, tables, bullet points, practice exercises, and ## Key Takeaways at the end"
+    }
+  ]
+}
+
+Write ${numWeeks} week objects. Each lesson must be practical, use real examples relevant to girls in Central Asia, Middle East, or Africa, and end with 2-3 practice exercises.
+Return ONLY valid JSON.`;
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().trim()
+        .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+      return JSON.parse(text);
+    } catch (err) {
+      lastError = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("503") && !msg.includes("overloaded") && !msg.includes("high demand")) throw err;
+      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
+export async function generateLessonContent(
+  topic: string,
+  courseTitle: string,
+  weekNumber: number,
+  difficulty: string = "Beginner"
+): Promise<string> {
+  const client = getGeminiClient();
+  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+  const prompt = `Write a complete educational lesson in Markdown for Week ${weekNumber} of "${courseTitle}".
+Topic: ${topic}
+Difficulty: ${difficulty}
+Audience: Young women aged 14-25 with limited prior education in developing regions.
+
+The lesson should have:
+- A clear # Week ${weekNumber}: Title heading
+- ## What You'll Learn section
+- 3-4 main ## content sections with explanations, tables where helpful, and real examples
+- ## Practice Exercises section with 2-3 exercises
+- ## Key Takeaways section with 4-5 checkmark bullet points
+
+Length: 500-700 words. Write in clear, simple English. Return ONLY the markdown content.`;
+
+  const result = await model.generateContent(prompt);
+  return result.response.text();
+}
+
 export async function generateMultipleStories(
   count: number = 3
 ): Promise<string> {
