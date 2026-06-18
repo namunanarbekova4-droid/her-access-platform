@@ -542,11 +542,11 @@ export function CirclesView() {
 
       {/* Error */}
       {error && !loading && (
-        <div className="bg-red-50 border border-red-100 rounded-3xl p-6 flex items-start gap-4">
-          <AlertCircle className="text-error flex-shrink-0 mt-0.5" size={22} />
+        <div className="bg-brand-lavender-light border border-brand-lavender rounded-3xl p-6 flex items-start gap-4">
+          <AlertCircle className="text-brand-purple flex-shrink-0 mt-0.5" size={20} />
           <div className="flex-1">
-            <p className="font-semibold text-red-700 mb-1">Could not load circles</p>
-            <p className="text-sm text-red-600 mb-4">{error}</p>
+            <p className="font-semibold text-brand-purple mb-1">Circles are taking a moment to load</p>
+            <p className="text-sm text-muted mb-4">This sometimes happens on first visit. Tap retry and they should appear.</p>
             <Button variant="outline" size="sm" onClick={() => void fetchCircles()}>
               <RefreshCw size={14} />
               Retry
