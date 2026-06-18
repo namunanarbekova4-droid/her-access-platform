@@ -392,6 +392,84 @@ Return ONLY the JSON array.`;
   throw lastError;
 }
 
+export async function moderateCircleMessage(content: string): Promise<{
+  classification: "SAFE" | "TOXIC" | "DISTRESS";
+  response?: string;
+}> {
+  try {
+    const client = getGeminiClient();
+    const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `You are a content safety system for a peer support community for girls aged 15-30.
+
+Classify this message into exactly one category:
+
+Message: "${content.replace(/"/g, '\\"').slice(0, 400)}"
+
+SAFE: normal conversation, questions, learning, sharing experiences, support
+TOXIC: harassment, bullying, hate speech, threats, explicit content, severe insults, spam
+DISTRESS: user expresses hopelessness, suicidal thoughts, physical danger, self-harm, wanting to disappear, feeling unsafe
+
+Return ONLY valid JSON with no extra text:
+{"classification":"SAFE","response":""}
+
+If DISTRESS: add a warm 2-sentence supportive response in "response".
+If SAFE or TOXIC: "response" must be empty string.`;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text().trim()
+      .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(text) as { classification: string; response: string };
+    const cls = parsed.classification as "SAFE" | "TOXIC" | "DISTRESS";
+    return {
+      classification: (["SAFE", "TOXIC", "DISTRESS"] as const).includes(cls) ? cls : "SAFE",
+      response: parsed.response || undefined,
+    };
+  } catch {
+    return { classification: "SAFE" }; // fail open — never block on moderation errors
+  }
+}
+
+export async function generateWeeklyChallenge(
+  roomName: string,
+  roomTopic: string,
+  language: string = "en"
+): Promise<string> {
+  const client = getGeminiClient();
+  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+  const langName = language === "ru" ? "Russian" : language === "kk" ? "Kazakh" : "English";
+
+  const prompt = `Create one weekly challenge for a peer support room. Write in ${langName}.
+
+Room: ${roomName}
+Topic: ${roomTopic}
+Audience: Girls aged 15–30 in developing countries
+
+Rules:
+- Practical and immediately actionable (no special tools required)
+- Safe, encouraging, and supportive in tone
+- Relevant to the room topic
+- Maximum 80 words
+- Must start with "This week:"
+
+Return ONLY the challenge text. No quotes. No extra formatting.`;
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const result = await model.generateContent(prompt);
+      return result.response.text().trim();
+    } catch (err) {
+      lastError = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("503") && !msg.includes("overloaded") && !msg.includes("high demand")) throw err;
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 export async function generateMultipleStories(
   count: number = 3
 ): Promise<string> {
