@@ -12,8 +12,7 @@ function genId() {
 }
 
 export async function POST(
-  request: NextRequest,
-  _ctx: { params: { id: string } }
+  request: NextRequest
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

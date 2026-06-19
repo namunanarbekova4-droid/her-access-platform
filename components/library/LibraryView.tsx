@@ -91,6 +91,7 @@ function VideoCard({ video }: { video: VideoLesson }) {
       >
         <div className="relative aspect-video bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center overflow-hidden">
           {video.thumbnailUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={video.thumbnailUrl}
               alt={video.title}
