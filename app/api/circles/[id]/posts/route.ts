@@ -21,7 +21,16 @@ function genId(prefix = "cp") {
 async function ensureTables() {
   const sql = neon(process.env.DATABASE_URL!);
   await Promise.all([
-    sql`ALTER TABLE "CirclePost" ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'message'`.catch(() => null),
+    sql`
+      CREATE TABLE IF NOT EXISTS "CirclePost" (
+        id          TEXT      PRIMARY KEY,
+        "circleId"  TEXT      NOT NULL,
+        nickname    TEXT      NOT NULL,
+        content     TEXT      NOT NULL,
+        type        TEXT      NOT NULL DEFAULT 'message',
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `.catch(() => null),
     sql`
       CREATE TABLE IF NOT EXISTS "CircleReaction" (
         id TEXT PRIMARY KEY,
@@ -42,6 +51,9 @@ async function ensureTables() {
       )
     `.catch(() => null),
   ]);
+
+  // Backfill type column for tables created before this column was added
+  await sql`ALTER TABLE "CirclePost" ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'message'`.catch(() => null);
 }
 
 export async function GET(
