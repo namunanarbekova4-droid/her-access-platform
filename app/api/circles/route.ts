@@ -7,16 +7,53 @@ import { generateAnonymousNickname } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 const DEFAULT_CIRCLES = [
-  { name: "English Learners", emoji: "🌍", topic: "english", description: "Practice speaking and writing English together in a safe space." },
-  { name: "Digital Skills", emoji: "💻", topic: "coding", description: "Learn technology, internet tools, and digital literacy step by step." },
-  { name: "Career & Jobs", emoji: "💼", topic: "career", description: "Discuss freelancing, jobs, CVs, and growing professionally." },
-  { name: "Mental Support", emoji: "💜", topic: "health", description: "A safe, judgment-free space for emotional support and encouragement." },
-  { name: "Study Together", emoji: "📚", topic: "study", description: "Study sessions, exam prep, and accountability partners." },
+  { name: "English Learners",  emoji: "🌍", topic: "english", description: "Practice speaking and writing English together in a safe space." },
+  { name: "Digital Skills",    emoji: "💻", topic: "coding",  description: "Learn technology, internet tools, and digital literacy step by step." },
+  { name: "Career & Jobs",     emoji: "💼", topic: "career",  description: "Discuss freelancing, jobs, CVs, and growing professionally." },
+  { name: "Mental Support",    emoji: "💜", topic: "health",  description: "A safe, judgment-free space for emotional support and encouragement." },
+  { name: "Study Together",    emoji: "📚", topic: "study",   description: "Study sessions, exam prep, and accountability partners." },
   { name: "Financial Freedom", emoji: "💰", topic: "finance", description: "Budgeting, saving, money management, and financial independence." },
 ];
 
 function genId(prefix = "ci") {
   return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// Creates all Circle-related tables if they don't exist yet.
+// This makes the route self-healing regardless of whether Prisma migrations ran.
+async function ensureTables() {
+  const sql = neon(process.env.DATABASE_URL!);
+  await sql`
+    CREATE TABLE IF NOT EXISTS "Circle" (
+      id           TEXT        PRIMARY KEY,
+      name         TEXT        NOT NULL,
+      description  TEXT,
+      topic        TEXT        NOT NULL DEFAULT 'general',
+      emoji        TEXT        NOT NULL DEFAULT '💬',
+      "maxMembers" INT         NOT NULL DEFAULT 5,
+      "createdAt"  TIMESTAMP   NOT NULL DEFAULT NOW()
+    )
+  `.catch((err: unknown) => {
+    console.error("[PeerCircles] Failed to create Circle table:", err);
+  });
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS "CircleMember" (
+      id         TEXT      PRIMARY KEY,
+      "circleId" TEXT      NOT NULL,
+      "userId"   TEXT      NOT NULL,
+      nickname   TEXT      NOT NULL,
+      "joinedAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+      UNIQUE ("circleId", "userId")
+    )
+  `.catch((err: unknown) => {
+    console.error("[PeerCircles] Failed to create CircleMember table:", err);
+  });
+
+  // Add emoji column to existing Circle tables that predate this migration
+  await sql`
+    ALTER TABLE "Circle" ADD COLUMN IF NOT EXISTS emoji TEXT NOT NULL DEFAULT '💬'
+  `.catch(() => null); // safe to ignore — column already exists
 }
 
 export async function GET() {
@@ -25,26 +62,47 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  await ensureTables();
   const sql = neon(process.env.DATABASE_URL!);
 
-  // Ensure emoji column exists
-  await sql`ALTER TABLE "Circle" ADD COLUMN IF NOT EXISTS emoji TEXT DEFAULT '💬'`.catch(() => null);
+  let circleRows = await sql`
+    SELECT * FROM "Circle" ORDER BY "createdAt" ASC
+  `.catch((err: unknown) => {
+    console.error("[PeerCircles] Failed to query Circle table:", err);
+    return [];
+  });
 
-  let circleRows = await sql`SELECT * FROM "Circle" ORDER BY "createdAt" ASC`.catch(() => []);
+  console.log(`[PeerCircles] Circle count: ${circleRows.length}`);
 
   // Auto-seed 6 default circles if table is empty
   if (circleRows.length === 0) {
+    console.log("[PeerCircles] Creating default circles…");
     const now = new Date().toISOString();
+    let created = 0;
+
     for (const c of DEFAULT_CIRCLES) {
-      await sql`
-        INSERT INTO "Circle" (id, name, topic, emoji, description, "maxMembers", "createdAt")
-        VALUES (${genId()}, ${c.name}, ${c.topic}, ${c.emoji}, ${c.description}, 5, ${now}::timestamp)
-        ON CONFLICT DO NOTHING
-      `.catch(() => null);
+      try {
+        await sql`
+          INSERT INTO "Circle" (id, name, topic, emoji, description, "maxMembers", "createdAt")
+          VALUES (${genId()}, ${c.name}, ${c.topic}, ${c.emoji}, ${c.description}, 5, ${now}::timestamp)
+          ON CONFLICT DO NOTHING
+        `;
+        created++;
+      } catch (err) {
+        console.error(`[PeerCircles] Failed to insert circle "${c.name}":`, err);
+      }
     }
-    circleRows = await sql`SELECT * FROM "Circle" ORDER BY "createdAt" ASC`.catch(() => []);
+
+    console.log(`[PeerCircles] Created ${created} circles`);
+
+    circleRows = await sql`
+      SELECT * FROM "Circle" ORDER BY "createdAt" ASC
+    `.catch((err: unknown) => {
+      console.error("[PeerCircles] Failed to re-query after seed:", err);
+      return [];
+    });
   } else {
-    // Backfill emoji for circles that don't have it yet
+    // Backfill emoji for circles that predate the emoji column
     for (const def of DEFAULT_CIRCLES) {
       await sql`
         UPDATE "Circle" SET emoji = ${def.emoji}
@@ -53,6 +111,8 @@ export async function GET() {
     }
     circleRows = await sql`SELECT * FROM "Circle" ORDER BY "createdAt" ASC`.catch(() => []);
   }
+
+  console.log(`[PeerCircles] Returning ${circleRows.length} circles`);
 
   if (circleRows.length === 0) {
     return NextResponse.json({ circles: [] });
