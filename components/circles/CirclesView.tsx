@@ -515,14 +515,14 @@ function ChatPanel({
   const handleVote = async (postId: string) => {
     const hasVoted = myVotes.has(postId);
 
-    setMyVotes((prev) => { const n = new Set(prev); hasVoted ? n.delete(postId) : n.add(postId); return n; });
+    setMyVotes((prev) => { const n = new Set(prev); if (hasVoted) n.delete(postId); else n.add(postId); return n; });
     setQuestionVotes((prev) => ({ ...prev, [postId]: (prev[postId] ?? 0) + (hasVoted ? -1 : 1) }));
 
     try {
       await fetch(`/api/circles/${circle.id}/questions/${postId}/vote`, { method: "POST" });
     } catch {
       // Revert
-      setMyVotes((prev) => { const n = new Set(prev); hasVoted ? n.add(postId) : n.delete(postId); return n; });
+      setMyVotes((prev) => { const n = new Set(prev); if (hasVoted) n.add(postId); else n.delete(postId); return n; });
       setQuestionVotes((prev) => ({ ...prev, [postId]: (prev[postId] ?? 0) + (hasVoted ? 1 : -1) }));
     }
   };

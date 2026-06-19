@@ -191,7 +191,7 @@ function DownloadedSection({ lessons }: { lessons: OfflineLesson[] }) {
         <Download size={24} className="mx-auto text-gray-300 mb-2" />
         <p className="text-sm text-gray-500">No saved lessons yet</p>
         <p className="text-xs text-gray-400 mt-1">
-          Open a video lesson and tap "Save for Offline"
+          Open a video lesson and tap &quot;Save for Offline&quot;
         </p>
       </div>
     );
