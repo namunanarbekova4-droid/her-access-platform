@@ -23,7 +23,10 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
         const dbUrl = process.env.DATABASE_URL;
-        if (!dbUrl) return null;
+        if (!dbUrl) {
+          console.error("[authorize] DATABASE_URL is not set");
+          return null;
+        }
 
         try {
           const sql = neon(dbUrl);
@@ -34,10 +37,16 @@ export const authOptions: NextAuthOptions = {
             LIMIT 1
           `;
           const user = rows[0];
-          if (!user || !user.password) return null;
+          if (!user || !user.password) {
+            console.log("[authorize] No user found for:", credentials.email.toLowerCase());
+            return null;
+          }
 
           const isValid = await bcrypt.compare(credentials.password, user.password as string);
-          if (!isValid) return null;
+          if (!isValid) {
+            console.log("[authorize] Wrong password for:", credentials.email.toLowerCase());
+            return null;
+          }
 
           return {
             id: user.id as string,
@@ -48,7 +57,7 @@ export const authOptions: NextAuthOptions = {
             isAdmin: (user.isAdmin as boolean) ?? false,
           };
         } catch (err) {
-          console.error("[authorize] error:", err);
+          console.error("[authorize] DB error:", err);
           return null;
         }
       },
