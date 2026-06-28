@@ -90,16 +90,23 @@ export default function LoginPage() {
             autoComplete="email"
           />
 
-          <Input
-            label="Password"
-            type="password"
-            placeholder="Your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            error={errors.password}
-            icon={<Lock size={16} />}
-            autoComplete="current-password"
-          />
+          <div>
+            <Input
+              label="Password"
+              type="password"
+              placeholder="Your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              error={errors.password}
+              icon={<Lock size={16} />}
+              autoComplete="current-password"
+            />
+            <div className="text-right mt-1.5">
+              <Link href="/forgot-password" className="text-xs text-muted hover:text-brand-purple transition-colors">
+                Forgot password?
+              </Link>
+            </div>
+          </div>
 
           <Button
             type="submit"
