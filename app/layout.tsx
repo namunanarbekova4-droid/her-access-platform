@@ -4,6 +4,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "@/components/layout/Providers";
 import { ToastProvider } from "@/components/ui/Toast";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { isRtl } from "@/lib/translations";
 
 export const metadata: Metadata = {
   title: {
@@ -24,13 +27,17 @@ export const viewport: Viewport = {
   themeColor: "#3B1347",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getServerSession(authOptions).catch(() => null);
+  const lang = session?.user?.language ?? "en";
+  const dir = isRtl(lang) ? "rtl" : "ltr";
+
   return (
-    <html lang="en">
+    <html lang={lang} dir={dir}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

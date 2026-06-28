@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
 import {
@@ -20,17 +20,7 @@ import {
 } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import { StealthMode, type StealthTheme } from "@/components/stealth/StealthMode";
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/mentor", label: "AI Mentor", icon: MessageCircle },
-  { href: "/learning", label: "Learning Path", icon: BookOpen },
-  { href: "/library", label: "Quiet Library", icon: Library },
-  { href: "/circles", label: "Peer Circles", icon: Users },
-  { href: "/stories", label: "Stories", icon: Star },
-  { href: "/news", label: "Announcements", icon: Megaphone },
-  { href: "/reviews", label: "Reviews", icon: Heart },
-];
+import { t } from "@/lib/translations";
 
 const THEMES: { id: StealthTheme; label: string; emoji: string; desc: string }[] = [
   { id: "recipe", emoji: "👩‍🍳", label: "Recipe Site", desc: "RecipeNook cooking blog" },
@@ -41,9 +31,22 @@ const THEMES: { id: StealthTheme; label: string; emoji: string; desc: string }[]
 
 export function DashboardNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const lang = session?.user?.language ?? "en";
   const [stealthTheme, setStealthTheme] = useState<StealthTheme | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
+
+  const navItems = [
+    { href: "/dashboard", label: t(lang, "dashboard"), icon: LayoutDashboard },
+    { href: "/mentor", label: t(lang, "aiMentor"), icon: MessageCircle },
+    { href: "/learning", label: t(lang, "learningPath"), icon: BookOpen },
+    { href: "/library", label: t(lang, "quietLibrary"), icon: Library },
+    { href: "/circles", label: t(lang, "peerCircles"), icon: Users },
+    { href: "/stories", label: t(lang, "stories"), icon: Star },
+    { href: "/news", label: t(lang, "announcements"), icon: Megaphone },
+    { href: "/reviews", label: t(lang, "reviews"), icon: Heart },
+  ];
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -99,13 +102,13 @@ export function DashboardNav() {
               className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 w-full transition-all duration-200"
             >
               <Eye size={18} />
-              Safe Mode
+              {t(lang, "safeMode")}
               <ChevronUp size={14} className={cn("ml-auto transition-transform duration-200", pickerOpen ? "rotate-180" : "")} />
             </button>
 
             {pickerOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-2xl border border-border shadow-lg overflow-hidden">
-                <p className="text-[10px] font-semibold text-muted uppercase tracking-wider px-3 pt-3 pb-1.5">Choose disguise</p>
+                <p className="text-[10px] font-semibold text-muted uppercase tracking-wider px-3 pt-3 pb-1.5">{t(lang, "chooseDisguise")}</p>
                 {THEMES.map((t) => (
                   <button
                     key={t.id}
@@ -128,7 +131,7 @@ export function DashboardNav() {
             className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-muted hover:text-error hover:bg-red-50 w-full transition-all duration-200"
           >
             <LogOut size={18} />
-            Sign Out
+            {t(lang, "signOut")}
           </button>
         </div>
       </aside>
@@ -158,14 +161,14 @@ export function DashboardNav() {
             );
           })}
           {/* Mobile Safe Mode — cycles through themes on tap */}
-          <MobileSafeButton onActivate={(theme) => setStealthTheme(theme)} />
+          <MobileSafeButton lang={lang} onActivate={(theme) => setStealthTheme(theme)} />
         </div>
       </nav>
     </>
   );
 }
 
-function MobileSafeButton({ onActivate }: { onActivate: (theme: StealthTheme) => void }) {
+function MobileSafeButton({ lang, onActivate }: { lang: string; onActivate: (theme: StealthTheme) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -181,7 +184,7 @@ function MobileSafeButton({ onActivate }: { onActivate: (theme: StealthTheme) =>
     <div className="relative" ref={ref}>
       {open && (
         <div className="absolute bottom-full right-0 mb-2 bg-white rounded-2xl border border-border shadow-lg overflow-hidden w-44">
-          <p className="text-[10px] font-semibold text-muted uppercase tracking-wider px-3 pt-3 pb-1">Disguise as</p>
+          <p className="text-[10px] font-semibold text-muted uppercase tracking-wider px-3 pt-3 pb-1">{t(lang, "disguiseAs")}</p>
           {THEMES.map((t) => (
             <button
               key={t.id}
@@ -199,7 +202,7 @@ function MobileSafeButton({ onActivate }: { onActivate: (theme: StealthTheme) =>
         className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium text-amber-600 min-w-[52px]"
       >
         <Eye size={20} />
-        <span>Safe</span>
+        <span>{t(lang, "safeMode").split(" ")[0]}</span>
       </button>
     </div>
   );

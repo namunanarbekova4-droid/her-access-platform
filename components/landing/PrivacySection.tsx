@@ -28,7 +28,7 @@ const privacyFeatures = [
 
 export function PrivacySection() {
   return (
-    <section className="py-24 bg-gradient-hero relative overflow-hidden">
+    <section id="privacy" className="py-24 bg-gradient-hero relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-brand-lavender/5 blur-3xl" />
         <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-accent/5 blur-3xl" />
