@@ -156,7 +156,7 @@ export function AdminLibrary() {
               <div className="bg-red-50 text-red-700 text-sm px-3 py-2 rounded-lg mb-4">{error}</div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Title *</label>
                 <input

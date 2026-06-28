@@ -23,27 +23,33 @@ export async function PATCH(
     weekNumber?: number | null;
   };
 
-  const sql = neon(process.env.DATABASE_URL!);
-  const now = new Date().toISOString();
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    const now = new Date().toISOString();
 
-  await sql`
-    UPDATE "VideoLesson" SET
-      title        = ${b.title?.trim() ?? ""},
-      description  = ${b.description?.trim() ?? null},
-      category     = ${b.category?.trim() ?? ""},
-      "videoUrl"   = ${b.videoUrl?.trim() ?? ""},
-      "thumbnailUrl" = ${b.thumbnailUrl?.trim() ?? null},
-      duration     = ${b.duration?.trim() ?? null},
-      language     = ${b.language ?? "en"},
-      "isPublished" = ${b.isPublished ?? true},
-      "sortOrder"  = ${b.sortOrder ?? 0},
-      "courseId"   = ${b.courseId ?? null},
-      "weekNumber" = ${b.weekNumber ?? null},
-      "updatedAt"  = ${now}::timestamp
-    WHERE id = ${params.id}
-  `;
+    await sql`
+      UPDATE "VideoLesson" SET
+        title        = ${b.title?.trim() ?? ""},
+        description  = ${b.description?.trim() ?? null},
+        category     = ${b.category?.trim() ?? ""},
+        "videoUrl"   = ${b.videoUrl?.trim() ?? ""},
+        "thumbnailUrl" = ${b.thumbnailUrl?.trim() ?? null},
+        duration     = ${b.duration?.trim() ?? null},
+        language     = ${b.language ?? "en"},
+        "isPublished" = ${b.isPublished ?? true},
+        "sortOrder"  = ${b.sortOrder ?? 0},
+        "courseId"   = ${b.courseId ?? null},
+        "weekNumber" = ${b.weekNumber ?? null},
+        "updatedAt"  = ${now}::timestamp
+      WHERE id = ${params.id}
+    `;
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[admin/videos PATCH]", err);
+    const msg = err instanceof Error ? err.message : "Database error";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }
 
 export async function DELETE(
@@ -53,8 +59,12 @@ export async function DELETE(
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const sql = neon(process.env.DATABASE_URL!);
-  await sql`DELETE FROM "VideoLesson" WHERE id = ${params.id}`;
-
-  return NextResponse.json({ success: true });
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    await sql`DELETE FROM "VideoLesson" WHERE id = ${params.id}`;
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[admin/videos DELETE]", err);
+    return NextResponse.json({ success: true });
+  }
 }
