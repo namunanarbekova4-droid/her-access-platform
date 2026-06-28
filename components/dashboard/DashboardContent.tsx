@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Confetti } from "@/components/ui/Confetti";
+import { t } from "@/lib/translations";
 
 const QUOTES = [
   { text: "Education is the most powerful weapon which you can use to change the world.", author: "Nelson Mandela" },
@@ -26,14 +27,6 @@ const QUOTES = [
   { text: "Every expert was once a beginner. Every achievement begins with the courage to try.", author: "" },
   { text: "The more that you read, the more things you will know.", author: "Dr. Seuss" },
   { text: "She believed she could, so she did.", author: "" },
-];
-
-const FEATURES = [
-  { href: "/library", icon: Library, label: "Library", desc: "Courses & lessons", color: "from-emerald-50 to-teal-50", iconColor: "text-emerald-600 bg-emerald-100" },
-  { href: "/circles", icon: Users, label: "Circles", desc: "Peer learning", color: "from-pink-50 to-rose-50", iconColor: "text-pink-600 bg-pink-100" },
-  { href: "/stories", icon: Star, label: "Stories", desc: "Be inspired", color: "from-amber-50 to-yellow-50", iconColor: "text-amber-600 bg-amber-100" },
-  { href: "/news", icon: Megaphone, label: "News", desc: "Announcements", color: "from-blue-50 to-indigo-50", iconColor: "text-blue-600 bg-blue-100" },
-  { href: "/reviews", icon: Heart, label: "Reviews", desc: "Community", color: "from-violet-50 to-purple-50", iconColor: "text-violet-600 bg-violet-100" },
 ];
 
 const MILESTONE_MESSAGES: Record<number, string> = {
@@ -55,12 +48,21 @@ interface DashboardContentProps {
   messageCount: number;
   streak: number;
   latestMilestone: number | null;
+  lang?: string;
 }
 
-export function DashboardContent({ greeting, hasProfile, goals, name, messageCount, streak, latestMilestone }: DashboardContentProps) {
+export function DashboardContent({ greeting, hasProfile, goals, name, messageCount, streak, latestMilestone, lang = "en" }: DashboardContentProps) {
   const quote = QUOTES[new Date().getDay() % QUOTES.length]!;
   const goalList = goals?.split(", ").slice(0, 2) ?? [];
   const firstName = name?.split(" ")[0] ?? "there";
+
+  const features = [
+    { href: "/library", icon: Library, label: t(lang, "quietLibrary"), desc: t(lang, "coursesLessons"), color: "from-emerald-50 to-teal-50", iconColor: "text-emerald-600 bg-emerald-100" },
+    { href: "/circles", icon: Users, label: t(lang, "peerCircles"), desc: t(lang, "peerLearning"), color: "from-pink-50 to-rose-50", iconColor: "text-pink-600 bg-pink-100" },
+    { href: "/stories", icon: Star, label: t(lang, "stories"), desc: t(lang, "beInspired"), color: "from-amber-50 to-yellow-50", iconColor: "text-amber-600 bg-amber-100" },
+    { href: "/news", icon: Megaphone, label: t(lang, "announcements"), desc: t(lang, "announcements"), color: "from-blue-50 to-indigo-50", iconColor: "text-blue-600 bg-blue-100" },
+    { href: "/reviews", icon: Heart, label: t(lang, "reviews"), desc: t(lang, "community"), color: "from-violet-50 to-purple-50", iconColor: "text-violet-600 bg-violet-100" },
+  ];
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-5xl mx-auto pb-24 lg:pb-8">
@@ -82,27 +84,27 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
             <div className="flex-1">
               <p className="text-brand-lavender/80 text-sm font-medium mb-1">{greeting}</p>
               <h1 className="text-2xl sm:text-3xl font-display font-bold text-white mb-2 leading-tight">
-                Welcome back, {firstName} 🌸
+                {t(lang, "welcomeBack")}, {firstName} 🌸
               </h1>
               {goalList.length > 0 ? (
                 <p className="text-white/70 text-sm">
-                  Your focus: <span className="text-brand-lavender font-medium">{goalList.join(" · ")}</span>
+                  {t(lang, "yourFocus")} <span className="text-brand-lavender font-medium">{goalList.join(" · ")}</span>
                 </p>
               ) : (
-                <p className="text-white/70 text-sm">Ready to learn something amazing today?</p>
+                <p className="text-white/70 text-sm">{t(lang, "readyToLearn")}</p>
               )}
               <div className="flex flex-wrap items-center gap-3 mt-3">
                 {messageCount > 0 && (
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-white/60 text-xs">{messageCount} conversations</span>
+                    <span className="text-white/60 text-xs">{messageCount} {t(lang, "conversations")}</span>
                   </div>
                 )}
                 {streak > 0 && (
                   <div className="flex items-center gap-1.5 bg-white/10 rounded-full px-2.5 py-1">
                     <Flame size={12} className="text-orange-300" />
                     <span className="text-white/90 text-xs font-semibold">
-                      {streak} day{streak !== 1 ? "s" : ""} streak
+                      {streak} {t(lang, "dayStreak")}
                     </span>
                   </div>
                 )}
@@ -113,7 +115,7 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
               className="flex-shrink-0 flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white text-sm font-medium px-4 py-2.5 rounded-2xl transition-all duration-200 group border border-white/20"
             >
               <Sparkles size={14} className="group-hover:rotate-12 transition-transform" />
-              Ask Noor
+              {t(lang, "askNoorShort")}
               <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
@@ -127,8 +129,8 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
             <div className="flex items-center gap-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 hover:shadow-soft transition-all group cursor-pointer">
               <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl flex-shrink-0">✨</div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-amber-900">Set up your learning profile</p>
-                <p className="text-xs text-amber-700 mt-0.5">Tell us your goals to unlock a personalised path</p>
+                <p className="text-sm font-semibold text-amber-900">{t(lang, "setupProfile")}</p>
+                <p className="text-xs text-amber-700 mt-0.5">{t(lang, "setupProfileDesc")}</p>
               </div>
               <ArrowRight size={16} className="text-amber-600 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
             </div>
@@ -147,17 +149,17 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-purple to-brand-purple-light flex items-center justify-center text-xl shadow-soft">🌸</div>
                   <div>
-                    <h3 className="font-semibold text-foreground text-sm">Noor — AI Mentor</h3>
+                    <h3 className="font-semibold text-foreground text-sm">Noor — {t(lang, "aiMentor")}</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                      <span className="text-xs text-muted">Always available</span>
+                      <span className="text-xs text-muted">{t(lang, "alwaysAvailable")}</span>
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-muted leading-relaxed">Ask anything — lessons, advice, homework, or motivation. I speak your language.</p>
+                <p className="text-xs text-muted leading-relaxed">{t(lang, "noorDesc")}</p>
               </div>
               <div className="flex items-center gap-1.5 mt-4 text-brand-purple text-xs font-semibold group-hover:gap-2.5 transition-all">
-                Start a conversation <ArrowRight size={12} />
+                {t(lang, "startConversation")} <ArrowRight size={12} />
               </div>
             </div>
           </Link>
@@ -174,16 +176,16 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
                     <BookOpen size={20} className="text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground text-sm">Learning Path</h3>
-                    <p className="text-xs text-muted">{hasProfile ? "Your personalised roadmap" : "Create your roadmap"}</p>
+                    <h3 className="font-semibold text-foreground text-sm">{t(lang, "learningPath")}</h3>
+                    <p className="text-xs text-muted">{hasProfile ? t(lang, "yourRoadmap") : t(lang, "createRoadmap")}</p>
                   </div>
                 </div>
                 <p className="text-xs text-muted leading-relaxed">
-                  {hasProfile ? "Your AI-generated 12-week plan with milestones and daily schedules." : "Complete your profile to get a personalised AI study plan created just for you."}
+                  {hasProfile ? t(lang, "pathDesc") : t(lang, "pathDescNew")}
                 </p>
               </div>
               <div className="flex items-center gap-1.5 mt-4 text-blue-600 text-xs font-semibold group-hover:gap-2.5 transition-all">
-                {hasProfile ? "View your path" : "Get started"} <ArrowRight size={12} />
+                {hasProfile ? t(lang, "viewPath") : t(lang, "getStarted")} <ArrowRight size={12} />
               </div>
             </div>
           </Link>
@@ -192,9 +194,9 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
 
       {/* Quick Actions */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-6">
-        <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3 px-1">Explore</h2>
+        <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3 px-1">{t(lang, "explore")}</h2>
         <div className="grid grid-cols-5 gap-2 sm:gap-3">
-          {FEATURES.map((f, i) => {
+          {features.map((f, i) => {
             const Icon = f.icon;
             return (
               <motion.div
@@ -211,7 +213,7 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
                     <div className={cn("w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0", f.iconColor)}>
                       <Icon size={15} />
                     </div>
-                    <p className="text-[11px] font-semibold text-foreground leading-none">{f.label}</p>
+                    <p className="text-[11px] font-semibold text-foreground leading-none">{f.label.split(" ")[0]}</p>
                   </div>
                 </Link>
               </motion.div>
@@ -227,7 +229,7 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
           <div className="bg-gradient-to-br from-brand-lavender-light to-white rounded-3xl border border-brand-lavender/30 p-5 h-full">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">💫</span>
-              <h3 className="text-sm font-semibold text-foreground">Today&apos;s Thought</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t(lang, "todaysThought")}</h3>
             </div>
             <blockquote className="text-sm text-muted italic leading-relaxed mb-3">
               &ldquo;{quote.text}&rdquo;
@@ -236,7 +238,7 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
               <p className="text-xs text-brand-purple/60 font-medium">— {quote.author}</p>
             )}
             <Link href="/stories" className="inline-flex items-center gap-1 text-xs text-brand-purple font-medium mt-3 hover:gap-1.5 transition-all">
-              More stories <ArrowRight size={11} />
+              {t(lang, "moreStories")} <ArrowRight size={11} />
             </Link>
           </div>
         </motion.div>
@@ -246,13 +248,13 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
           <div className="bg-white rounded-3xl border border-border shadow-card p-5 h-full flex flex-col">
             <div className="flex items-center gap-2 mb-3">
               <Zap size={15} className="text-brand-purple" />
-              <h3 className="text-sm font-semibold text-foreground">Quick Actions</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t(lang, "quickActions")}</h3>
             </div>
             <div className="space-y-1.5 flex-1">
               {[
-                { href: "/mentor", label: "Ask Noor a question", icon: MessageCircle, color: "text-brand-purple" },
-                { href: "/library", label: "Continue a course", icon: Library, color: "text-emerald-600" },
-                { href: "/circles", label: "Check peer circles", icon: Users, color: "text-pink-600" },
+                { href: "/mentor", label: t(lang, "askNoor"), icon: MessageCircle, color: "text-brand-purple" },
+                { href: "/library", label: t(lang, "continueCourse"), icon: Library, color: "text-emerald-600" },
+                { href: "/circles", label: t(lang, "checkCircles"), icon: Users, color: "text-pink-600" },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
@@ -275,9 +277,9 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-foreground">
-                    {streak}-day learning streak!
+                    {streak} {t(lang, "learningStreak")}
                   </p>
-                  <p className="text-[10px] text-muted">Come back tomorrow to keep it going</p>
+                  <p className="text-[10px] text-muted">{t(lang, "comeBackTomorrow")}</p>
                 </div>
               </div>
             )}

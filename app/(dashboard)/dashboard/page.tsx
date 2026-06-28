@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { neon } from "@neondatabase/serverless";
-import { getGreeting } from "@/lib/utils";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
+import { getLocalizedGreeting } from "@/lib/translations";
 
 export const metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -57,7 +57,8 @@ export default async function DashboardPage() {
   const latestMilestone = [...MILESTONES].reverse().find((m) => messageCount >= m) ?? null;
 
   const displayName = (user?.nickname as string | null) ?? (user?.name as string | null);
-  const greeting = getGreeting(displayName ?? undefined);
+  const lang = session.user.language ?? "en";
+  const greeting = getLocalizedGreeting(lang, displayName ?? undefined);
 
   return (
     <DashboardContent
@@ -68,6 +69,7 @@ export default async function DashboardPage() {
       messageCount={messageCount}
       streak={streak}
       latestMilestone={latestMilestone}
+      lang={lang}
     />
   );
 }
