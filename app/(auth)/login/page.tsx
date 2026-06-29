@@ -10,12 +10,30 @@ import { Input } from "@/components/ui/Input";
 import { Mail, Lock } from "lucide-react";
 import toast from "react-hot-toast";
 
+const LOGIN_UI = {
+  en: { welcome: "Welcome back 🌸", subtitle: "Sign in to continue your learning journey.", email: "Email address", password: "Password", signIn: "Sign In", noAccount: "Don't have an account?", createOne: "Create one — it's free", forgot: "Forgot password?" },
+  ar: { welcome: "مرحباً بعودتك 🌸", subtitle: "سجلي الدخول لمواصلة رحلة تعلمك.", email: "البريد الإلكتروني", password: "كلمة المرور", signIn: "تسجيل الدخول", noAccount: "ليس لديك حساب؟", createOne: "أنشئي واحداً — مجاناً", forgot: "نسيتِ كلمة المرور؟" },
+  fa: { welcome: "خوش آمدی 🌸", subtitle: "برای ادامه سفر یادگیری‌ات وارد شو.", email: "ایمیل", password: "رمز عبور", signIn: "ورود", noAccount: "حساب ندارید؟", createOne: "یک حساب رایگان بساز", forgot: "رمز عبور را فراموش کردی؟" },
+  ps: { welcome: "ښه راغلې 🌸", subtitle: "د زده کړې سفر ادامه کولو لپاره داخل شه.", email: "ایمیل", password: "پاسورډ", signIn: "ننوتل", noAccount: "حساب نه لرې؟", createOne: "وړیا حساب جوړ کړه", forgot: "پاسورډ مو هیر شو؟" },
+  ru: { welcome: "С возвращением 🌸", subtitle: "Войди, чтобы продолжить учёбу.", email: "Электронная почта", password: "Пароль", signIn: "Войти", noAccount: "Нет аккаунта?", createOne: "Создай бесплатно", forgot: "Забыла пароль?" },
+} as const;
+
+const LANG_FLAGS = [
+  { code: "en", label: "EN" },
+  { code: "ar", label: "ع" },
+  { code: "fa", label: "د" },
+  { code: "ps", label: "پ" },
+  { code: "ru", label: "Р" },
+] as const;
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [displayLang, setDisplayLang] = useState<keyof typeof LOGIN_UI>("en");
+  const ui = LOGIN_UI[displayLang];
 
   // Wake up Neon DB as soon as the page loads
   useEffect(() => {
@@ -69,18 +87,30 @@ export default function LoginPage() {
       transition={{ duration: 0.5 }}
     >
       <div className="bg-white rounded-3xl shadow-card p-8">
+        {/* Language picker */}
+        <div className="flex justify-end gap-1 mb-6">
+          {LANG_FLAGS.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => setDisplayLang(l.code)}
+              className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${displayLang === l.code ? "bg-brand-purple text-white" : "bg-gray-100 text-gray-500 hover:bg-brand-lavender-light hover:text-brand-purple"}`}
+              title={l.code}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+
         <div className="mb-8">
           <h1 className="text-2xl font-display font-bold text-foreground mb-2">
-            Welcome back 🌸
+            {ui.welcome}
           </h1>
-          <p className="text-muted text-sm">
-            Sign in to continue your learning journey.
-          </p>
+          <p className="text-muted text-sm">{ui.subtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Email address"
+            label={ui.email}
             type="email"
             placeholder="your@email.com"
             value={email}
@@ -92,9 +122,9 @@ export default function LoginPage() {
 
           <div>
             <Input
-              label="Password"
+              label={ui.password}
               type="password"
-              placeholder="Your password"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               error={errors.password}
@@ -103,7 +133,7 @@ export default function LoginPage() {
             />
             <div className="text-right mt-1.5">
               <Link href="/forgot-password" className="text-xs text-muted hover:text-brand-purple transition-colors">
-                Forgot password?
+                {ui.forgot}
               </Link>
             </div>
           </div>
@@ -115,17 +145,17 @@ export default function LoginPage() {
             size="lg"
             className="mt-2"
           >
-            Sign In
+            {ui.signIn}
           </Button>
         </form>
 
         <p className="text-center text-sm text-muted mt-6">
-          Don&apos;t have an account?{" "}
+          {ui.noAccount}{" "}
           <Link
             href="/register"
             className="text-brand-purple font-medium hover:underline"
           >
-            Create one — it&apos;s free
+            {ui.createOne}
           </Link>
         </p>
       </div>

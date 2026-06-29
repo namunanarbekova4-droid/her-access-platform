@@ -17,6 +17,7 @@ import {
   Megaphone,
   Heart,
   ChevronUp,
+  Settings,
 } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import { StealthMode, type StealthTheme } from "@/components/stealth/StealthMode";
@@ -46,6 +47,7 @@ export function DashboardNav() {
     { href: "/stories", label: t(lang, "stories"), icon: Star },
     { href: "/news", label: t(lang, "announcements"), icon: Megaphone },
     { href: "/reviews", label: t(lang, "reviews"), icon: Heart },
+    { href: "/settings", label: t(lang, "settings"), icon: Settings },
   ];
 
   useEffect(() => {

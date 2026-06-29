@@ -14,6 +14,7 @@ import {
   Heart,
   Zap,
   Flame,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Confetti } from "@/components/ui/Confetti";
@@ -255,6 +256,7 @@ export function DashboardContent({ greeting, hasProfile, goals, name, messageCou
                 { href: "/mentor", label: t(lang, "askNoor"), icon: MessageCircle, color: "text-brand-purple" },
                 { href: "/library", label: t(lang, "continueCourse"), icon: Library, color: "text-emerald-600" },
                 { href: "/circles", label: t(lang, "checkCircles"), icon: Users, color: "text-pink-600" },
+                { href: "/settings", label: t(lang, "settings"), icon: Settings, color: "text-gray-500" },
               ].map((item) => {
                 const Icon = item.icon;
                 return (

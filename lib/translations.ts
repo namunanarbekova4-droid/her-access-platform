@@ -56,6 +56,14 @@ const ui = {
     setupProfile: "Set up your learning profile",
     setupProfileDesc: "Tell us your goals to unlock a personalised path",
     askNoorShort: "Ask Noor",
+    settings: "Settings",
+    editProfile: "Edit your profile and preferences",
+    accountSection: "Account",
+    learningPrefSection: "Learning Preferences",
+    language: "Language",
+    displayName: "Nickname",
+    saveChanges: "Save Changes",
+    changesSaved: "Saved!",
   },
   ar: {
     // Nav
@@ -106,6 +114,14 @@ const ui = {
     setupProfile: "أعدّي ملفك التعليمي",
     setupProfileDesc: "أخبرينا بأهدافك لفتح مسار شخصي",
     askNoorShort: "اسألي نور",
+    settings: "الإعدادات",
+    editProfile: "عدّلي ملفك الشخصي وتفضيلاتك",
+    accountSection: "الحساب",
+    learningPrefSection: "تفضيلات التعلم",
+    language: "اللغة",
+    displayName: "الاسم المستعار",
+    saveChanges: "حفظ التغييرات",
+    changesSaved: "تم الحفظ!",
   },
   fa: {
     // Nav
@@ -156,6 +172,14 @@ const ui = {
     setupProfile: "پروفایل یادگیری‌ات را تنظیم کن",
     setupProfileDesc: "اهدافت را بگو تا مسیر شخصی‌ات باز شود",
     askNoorShort: "از نور بپرس",
+    settings: "تنظیمات",
+    editProfile: "پروفایل و تنظیمات خود را ویرایش کنید",
+    accountSection: "حساب",
+    learningPrefSection: "تنظیمات یادگیری",
+    language: "زبان",
+    displayName: "نام مستعار",
+    saveChanges: "ذخیره تغییرات",
+    changesSaved: "ذخیره شد!",
   },
   ps: {
     // Nav
@@ -206,6 +230,14 @@ const ui = {
     setupProfile: "خپل زده کړې پروفایل تنظیم کړه",
     setupProfileDesc: "خپل موخې راسره شریک کړه چې شخصي لار خلاصه شي",
     askNoorShort: "له نور وپوښته",
+    settings: "ترتیبات",
+    editProfile: "خپل پروفایل او غوره توبونه سمول",
+    accountSection: "حساب",
+    learningPrefSection: "د زده کړې غوره توبونه",
+    language: "ژبه",
+    displayName: "لقب",
+    saveChanges: "بدلونونه خوندي کړه",
+    changesSaved: "خوندي شو!",
   },
   ru: {
     // Nav
@@ -256,6 +288,14 @@ const ui = {
     setupProfile: "Настроить профиль обучения",
     setupProfileDesc: "Расскажи о своих целях, чтобы открыть персональный путь",
     askNoorShort: "Спросить Нур",
+    settings: "Настройки",
+    editProfile: "Редактировать профиль и настройки",
+    accountSection: "Аккаунт",
+    learningPrefSection: "Настройки обучения",
+    language: "Язык",
+    displayName: "Псевдоним",
+    saveChanges: "Сохранить изменения",
+    changesSaved: "Сохранено!",
   },
 } as const;
 

@@ -69,13 +69,17 @@ export const authOptions: NextAuthOptions = {
     newUser: "/onboarding",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.language = (user as { language?: string }).language ?? "en";
         token.onboardingDone =
           (user as { onboardingDone?: boolean }).onboardingDone ?? false;
         token.isAdmin = (user as { isAdmin?: boolean }).isAdmin ?? false;
+      }
+      const updatedLang = (session as { language?: string } | undefined)?.language;
+      if (trigger === "update" && updatedLang) {
+        token.language = updatedLang;
       }
       return token;
     },

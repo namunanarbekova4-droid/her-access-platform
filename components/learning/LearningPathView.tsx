@@ -18,6 +18,7 @@ import {
   Clock,
   Sparkles,
   AlertCircle,
+  Settings,
 } from "lucide-react";
 import type { LearningPath, LearningMilestone } from "@/types";
 
@@ -298,17 +299,25 @@ export function LearningPathView() {
             )}
           </div>
 
-          {!loading && path && (
-            <Button
-              variant="outline"
-              size="sm"
-              loading={regenerating}
-              onClick={() => void handleRegenerate()}
-            >
-              <RefreshCw size={14} />
-              Regenerate Plan
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <Link href="/settings">
+              <Button variant="outline" size="sm">
+                <Settings size={14} />
+                Edit Profile
+              </Button>
+            </Link>
+            {!loading && path && (
+              <Button
+                variant="outline"
+                size="sm"
+                loading={regenerating}
+                onClick={() => void handleRegenerate()}
+              >
+                <RefreshCw size={14} />
+                Regenerate Plan
+              </Button>
+            )}
+          </div>
         </div>
       </motion.div>
 
