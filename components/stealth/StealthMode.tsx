@@ -10,6 +10,31 @@ interface StealthModeProps {
   onExit: () => void;
 }
 
+function ExitButton({ onExit, bgClass, iconClass }: { onExit: () => void; bgClass: string; iconClass: string }) {
+  const [showHint, setShowHint] = useState(false);
+  return (
+    <div className="fixed bottom-5 right-4 z-20">
+      <button
+        onMouseEnter={() => setShowHint(true)}
+        onMouseLeave={() => setShowHint(false)}
+        onTouchStart={() => setShowHint(true)}
+        onClick={onExit}
+        className={`w-10 h-10 rounded-full ${bgClass} opacity-50 hover:opacity-100 active:opacity-100 transition-opacity shadow flex items-center justify-center`}
+        aria-label="Exit safe mode"
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className={iconClass}>
+          <path d="M8 2L4 6L8 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {showHint && (
+        <div className="absolute bottom-12 right-0 bg-white text-xs text-gray-600 px-3 py-1.5 rounded-xl shadow-lg border border-gray-100 whitespace-nowrap">
+          Tap to exit safe mode
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Recipe Theme ────────────────────────────────────────────────────────────
 
 const recipes = [
@@ -22,7 +47,6 @@ const recipes = [
 
 function RecipeTheme({ onExit }: { onExit: () => void }) {
   const [selected, setSelected] = useState<typeof recipes[0] | null>(null);
-  const [showHint, setShowHint] = useState(false);
   return (
     <div className="fixed inset-0 z-[9999] bg-orange-50 overflow-y-auto">
       <header className="bg-white border-b border-orange-100 shadow-sm sticky top-0 z-10">
@@ -88,10 +112,7 @@ function RecipeTheme({ onExit }: { onExit: () => void }) {
           </div>
         </div>
       )}
-      <div className="fixed bottom-4 right-4">
-        <button onMouseEnter={() => setShowHint(true)} onMouseLeave={() => setShowHint(false)} onClick={onExit} className="w-8 h-8 rounded-full bg-orange-100 opacity-20 hover:opacity-50 transition-opacity" aria-label="Exit safe mode" />
-        {showHint && <div className="absolute bottom-10 right-0 bg-white text-xs text-gray-500 px-3 py-1.5 rounded-xl shadow border whitespace-nowrap">Ctrl+Shift+H to exit</div>}
-      </div>
+      <ExitButton onExit={onExit} bgClass="bg-orange-200" iconClass="text-orange-800" />
     </div>
   );
 }
@@ -107,7 +128,6 @@ const CITIES = [
 
 function WeatherTheme({ onExit }: { onExit: () => void }) {
   const [cityIdx, setCityIdx] = useState(0);
-  const [showHint, setShowHint] = useState(false);
   const city = CITIES[cityIdx]!;
   const bgClass = city.condition.includes("Rain") || city.condition.includes("Storm") ? "from-slate-700 to-slate-900" : city.condition.includes("Cloud") ? "from-blue-400 to-slate-600" : "from-sky-400 to-blue-600";
 
@@ -180,10 +200,7 @@ function WeatherTheme({ onExit }: { onExit: () => void }) {
         </div>
       </div>
 
-      <div className="fixed bottom-4 right-4">
-        <button onMouseEnter={() => setShowHint(true)} onMouseLeave={() => setShowHint(false)} onClick={onExit} className="w-8 h-8 rounded-full bg-blue-200 opacity-20 hover:opacity-50 transition-opacity" aria-label="Exit safe mode" />
-        {showHint && <div className="absolute bottom-10 right-0 bg-white text-xs text-gray-500 px-3 py-1.5 rounded-xl shadow border whitespace-nowrap">Ctrl+Shift+H to exit</div>}
-      </div>
+      <ExitButton onExit={onExit} bgClass="bg-blue-200" iconClass="text-blue-800" />
     </div>
   );
 }
@@ -211,7 +228,6 @@ const TAG_COLORS: Record<string, string> = {
 function NewsTheme({ onExit }: { onExit: () => void }) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [expanded, setExpanded] = useState<number | null>(null);
-  const [showHint, setShowHint] = useState(false);
   const categories = ["All", "Technology", "Health", "Environment", "Science", "Education", "Business"];
   const filtered = activeCategory === "All" ? NEWS_ARTICLES : NEWS_ARTICLES.filter((a) => a.category === activeCategory);
 
@@ -279,10 +295,7 @@ function NewsTheme({ onExit }: { onExit: () => void }) {
         </div>
       </div>
 
-      <div className="fixed bottom-4 right-4">
-        <button onMouseEnter={() => setShowHint(true)} onMouseLeave={() => setShowHint(false)} onClick={onExit} className="w-8 h-8 rounded-full bg-gray-200 opacity-20 hover:opacity-50 transition-opacity" aria-label="Exit safe mode" />
-        {showHint && <div className="absolute bottom-10 right-0 bg-white text-xs text-gray-500 px-3 py-1.5 rounded-xl shadow border whitespace-nowrap">Ctrl+Shift+H to exit</div>}
-      </div>
+      <ExitButton onExit={onExit} bgClass="bg-gray-200" iconClass="text-gray-700" />
     </div>
   );
 }
@@ -294,7 +307,6 @@ function CalculatorTheme({ onExit }: { onExit: () => void }) {
   const [prev, setPrev] = useState<string | null>(null);
   const [op, setOp] = useState<string | null>(null);
   const [resetNext, setResetNext] = useState(false);
-  const [showHint, setShowHint] = useState(false);
 
   const pressDigit = (d: string) => {
     if (resetNext) { setDisplay(d); setResetNext(false); return; }
@@ -360,10 +372,7 @@ function CalculatorTheme({ onExit }: { onExit: () => void }) {
           ))}
         </div>
       </div>
-      <div className="fixed bottom-4 right-4">
-        <button onMouseEnter={() => setShowHint(true)} onMouseLeave={() => setShowHint(false)} onClick={onExit} className="w-8 h-8 rounded-full bg-gray-700 opacity-20 hover:opacity-50 transition-opacity" aria-label="Exit safe mode" />
-        {showHint && <div className="absolute bottom-10 right-0 bg-white text-xs text-gray-500 px-3 py-1.5 rounded-xl shadow border whitespace-nowrap">Ctrl+Shift+H to exit</div>}
-      </div>
+      <ExitButton onExit={onExit} bgClass="bg-gray-600" iconClass="text-gray-100" />
     </div>
   );
 }
