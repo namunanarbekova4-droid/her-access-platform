@@ -9,22 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Mail, Lock } from "lucide-react";
 import toast from "react-hot-toast";
-
-const LOGIN_UI = {
-  en: { welcome: "Welcome back 🌸", subtitle: "Sign in to continue your learning journey.", email: "Email address", password: "Password", signIn: "Sign In", noAccount: "Don't have an account?", createOne: "Create one — it's free", forgot: "Forgot password?" },
-  ar: { welcome: "مرحباً بعودتك 🌸", subtitle: "سجلي الدخول لمواصلة رحلة تعلمك.", email: "البريد الإلكتروني", password: "كلمة المرور", signIn: "تسجيل الدخول", noAccount: "ليس لديك حساب؟", createOne: "أنشئي واحداً — مجاناً", forgot: "نسيتِ كلمة المرور؟" },
-  fa: { welcome: "خوش آمدی 🌸", subtitle: "برای ادامه سفر یادگیری‌ات وارد شو.", email: "ایمیل", password: "رمز عبور", signIn: "ورود", noAccount: "حساب ندارید؟", createOne: "یک حساب رایگان بساز", forgot: "رمز عبور را فراموش کردی؟" },
-  ps: { welcome: "ښه راغلې 🌸", subtitle: "د زده کړې سفر ادامه کولو لپاره داخل شه.", email: "ایمیل", password: "پاسورډ", signIn: "ننوتل", noAccount: "حساب نه لرې؟", createOne: "وړیا حساب جوړ کړه", forgot: "پاسورډ مو هیر شو؟" },
-  ru: { welcome: "С возвращением 🌸", subtitle: "Войди, чтобы продолжить учёбу.", email: "Электронная почта", password: "Пароль", signIn: "Войти", noAccount: "Нет аккаунта?", createOne: "Создай бесплатно", forgot: "Забыла пароль?" },
-} as const;
-
-const LANG_FLAGS = [
-  { code: "en", label: "EN" },
-  { code: "ar", label: "ع" },
-  { code: "fa", label: "د" },
-  { code: "ps", label: "پ" },
-  { code: "ru", label: "Р" },
-] as const;
+import { AUTH_UI, AUTH_LANG_FLAGS, type AuthLang } from "@/lib/auth-translations";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,8 +17,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  const [displayLang, setDisplayLang] = useState<keyof typeof LOGIN_UI>("en");
-  const ui = LOGIN_UI[displayLang];
+  const [displayLang, setDisplayLang] = useState<AuthLang>("en");
+  const ui = AUTH_UI[displayLang];
 
   // Wake up Neon DB as soon as the page loads
   useEffect(() => {
@@ -89,7 +74,7 @@ export default function LoginPage() {
       <div className="bg-white rounded-3xl shadow-card p-8">
         {/* Language picker */}
         <div className="flex justify-end gap-1 mb-6">
-          {LANG_FLAGS.map((l) => (
+          {AUTH_LANG_FLAGS.map((l) => (
             <button
               key={l.code}
               onClick={() => setDisplayLang(l.code)}
@@ -105,7 +90,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-display font-bold text-foreground mb-2">
             {ui.welcome}
           </h1>
-          <p className="text-muted text-sm">{ui.subtitle}</p>
+          <p className="text-muted text-sm">{ui.loginSubtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
