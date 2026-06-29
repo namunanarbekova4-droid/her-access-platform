@@ -35,21 +35,32 @@ export async function POST(request: NextRequest) {
 
       const token = crypto.randomUUID().replace(/-/g, "") + Math.random().toString(36).slice(2);
       const id = "prt" + Date.now().toString(36);
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
       await sql`
         INSERT INTO "PasswordResetToken" (id, email, token, "expiresAt")
         VALUES (${id}, ${email}, ${token}, ${expiresAt}::timestamp)
       `;
 
-      const appUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+      // Build reset URL from request origin so it works in any deployment
+      const proto = request.headers.get("x-forwarded-proto")?.split(",")[0];
+      const host = request.headers.get("host");
+      const origin =
+        request.headers.get("origin") ??
+        (proto && host ? `${proto}://${host}` : null) ??
+        process.env.NEXTAUTH_URL ??
+        "http://localhost:3000";
+      const appUrl = origin.replace(/\/$/, "");
       const resetUrl = `${appUrl}/set-new-password?token=${token}`;
 
       const apiKey = process.env.RESEND_API_KEY;
       if (apiKey) {
         const resend = new Resend(apiKey);
-        const fromEmail = process.env.RESEND_FROM ?? "Her Access <noreply@heraccess.tech>";
-        await resend.emails.send({
+        // Use RESEND_FROM if set to a verified domain; falls back to Resend's free sender
+        // which works without domain verification on any Resend account.
+        const fromEmail = process.env.RESEND_FROM ?? "Her Access <onboarding@resend.dev>";
+
+        const { error: sendError } = await resend.emails.send({
           from: fromEmail,
           to: email,
           subject: "Reset your Her Access password",
@@ -63,21 +74,34 @@ export async function POST(request: NextRequest) {
               <a href="${resetUrl}" style="display:inline-block;background:#3B1347;color:#fff;padding:12px 28px;border-radius:16px;text-decoration:none;font-weight:600">
                 Reset Password
               </a>
+              <p style="color:#888;font-size:13px;margin-top:20px">
+                Or copy this link into your browser:<br/>
+                <span style="color:#3B1347;word-break:break-all">${resetUrl}</span>
+              </p>
               <p style="color:#999;font-size:12px;margin-top:24px">
                 If you didn't request this, you can safely ignore this email.
-                <br/>Your password will not change.
               </p>
               <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
               <p style="color:#bbb;font-size:11px">Her Access — Safe learning for every girl</p>
             </div>
           `,
-        }).catch((err) => console.error("[forgot-password] email send error:", err));
+        });
+
+        if (sendError) {
+          console.error("[forgot-password] Resend error:", sendError);
+          // Return error — the email could not be sent. We do NOT reveal whether
+          // the account exists since we reach this code only when it does.
+          return NextResponse.json(
+            { error: "We could not send the email right now. Please try again in a few minutes." },
+            { status: 500 }
+          );
+        }
       } else {
-        console.log("[forgot-password] RESEND_API_KEY not set. Reset link:", resetUrl);
+        // No API key — log the link so it can be shared manually during development
+        console.warn("[forgot-password] RESEND_API_KEY is not set. Reset link:", resetUrl);
       }
     }
 
-    // Always return success to prevent email enumeration
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[forgot-password]", err);
