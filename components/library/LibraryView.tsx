@@ -190,9 +190,9 @@ function DownloadedSection({ lessons }: { lessons: OfflineLesson[] }) {
     return (
       <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center">
         <Download size={24} className="mx-auto text-gray-300 mb-2" />
-        <p className="text-sm text-gray-500">No saved lessons yet</p>
+        <p className="text-sm text-gray-500">No bookmarks yet</p>
         <p className="text-xs text-gray-400 mt-1">
-          Open a video lesson and tap &quot;Save for Offline&quot;
+          Open a video lesson and tap &quot;Bookmark&quot; to save it here
         </p>
       </div>
     );
@@ -340,12 +340,13 @@ export function LibraryView() {
 
   const standaloneVideos = videos.filter((v) => !v.courseId);
   const filteredVideos = standaloneVideos.filter((v) => {
+    const matchCat = activeCategory === "All" || v.category === activeCategory;
     const q = query.toLowerCase();
-    return (
+    const matchQ =
       q === "" ||
       v.title.toLowerCase().includes(q) ||
-      (v.description ?? "").toLowerCase().includes(q)
-    );
+      (v.description ?? "").toLowerCase().includes(q);
+    return matchCat && matchQ;
   });
 
   const hasContent = filteredCourses.length > 0 || filteredVideos.length > 0;
@@ -534,7 +535,7 @@ export function LibraryView() {
         )}
       </AnimatePresence>
 
-      {/* Downloaded / offline section */}
+      {/* Bookmarks section */}
       {showDownloaded && (
         <motion.section
           initial={{ opacity: 0, y: 12 }}
@@ -545,7 +546,7 @@ export function LibraryView() {
           <div className="flex items-center gap-2 mb-4">
             <Download size={14} className="text-[#3B1347]" />
             <h2 className="text-base font-semibold text-foreground">
-              Downloaded{" "}
+              Bookmarks{" "}
               {offlineLessons.length > 0 && (
                 <span className="text-xs font-normal text-muted ml-1">
                   {offlineLessons.length} saved

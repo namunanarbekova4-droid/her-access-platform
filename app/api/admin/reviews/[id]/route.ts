@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
-import { prisma } from "@/lib/prisma";
+import { neon } from "@neondatabase/serverless";
+
+export const dynamic = "force-dynamic";
 
 export async function PATCH(
   request: NextRequest,
@@ -11,10 +13,16 @@ export async function PATCH(
 
   const body = await request.json() as { status: "APPROVED" | "REJECTED" | "PENDING" };
 
-  const review = await prisma.review.update({
-    where: { id: params.id },
-    data: { status: body.status },
-  });
-
-  return NextResponse.json({ review });
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    const now = new Date().toISOString();
+    await sql`
+      UPDATE "Review" SET status = ${body.status}, "updatedAt" = ${now}::timestamp
+      WHERE id = ${params.id}
+    `;
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[admin/reviews PATCH]", err);
+    return NextResponse.json({ error: "Failed to update review" }, { status: 500 });
+  }
 }
